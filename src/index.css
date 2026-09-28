@@ -1,3 +1,11 @@
+/* =========================================================
+   CROP DOCTOR - RESPONSIVE INDEX.CSS
+========================================================= */
+
+/* =========================
+   GLOBAL
+========================= */
+
 * {
   margin: 0;
   padding: 0;
@@ -13,6 +21,14 @@ body {
   background: #f6faf5;
   color: #18321f;
   overflow-x: hidden;
+  line-height: 1.5;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
 }
 
 img {
@@ -22,154 +38,104 @@ img {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
+}
+
+button {
+  cursor: pointer;
 }
 
 a {
   text-decoration: none;
   color: inherit;
 }
-```css
-/* =========================
-   NAVBAR RESPONSIVE MENU
-========================= */
 
-.menu-toggle {
-  display: none;
-  border: none;
-  background: transparent;
-  font-size: 28px;
-  cursor: pointer;
-  color: #18321f;
+/* =========================================================
+   NAVBAR
+========================================================= */
+
+.navbar {
+  width: 100%;
+  min-height: 72px;
+  padding: 0 8%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-bottom: 1px solid #e5eee5;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
-/* Active desktop link */
+.logo {
+  font-size: 23px;
+  font-weight: 700;
+  color: #218c46;
+  white-space: nowrap;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-links a {
+  color: #18321f;
+  font-size: 15px;
+  font-weight: 500;
+  transition: 0.2s ease;
+}
+
+.nav-links a:hover {
+  color: #218c46;
+}
+
 .nav-links a.active {
   color: #218c46;
   font-weight: 700;
 }
 
-/* Mobile menu */
+.login-btn {
+  background: #218c46;
+  color: #ffffff !important;
+  padding: 10px 18px;
+  border-radius: 8px;
+}
+
+.login-btn:hover {
+  background: #176d35 !important;
+}
+
+.menu-toggle {
+  display: none;
+  border: none;
+  background: transparent;
+  color: #18321f;
+  font-size: 28px;
+  line-height: 1;
+}
+
+/* Mobile menu hidden by default */
 .mobile-menu {
   display: none;
 }
 
-/* =========================
-   MOBILE NAVBAR
-========================= */
-
-@media (max-width: 850px) {
-
-  .desktop-menu {
-    display: none;
-  }
-
-  .menu-toggle {
-    display: block;
-  }
-
-  .navbar {
-    position: sticky;
-    top: 0;
-  }
-
-  .mobile-menu {
-    position: absolute;
-    top: 70px;
-    left: 0;
-    width: 100%;
-    background: white;
-    padding: 15px 20px 25px;
-    border-top: 1px solid #e5eee5;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-
-    transform: translateY(-20px);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-
-    transition: 0.25s ease;
-  }
-
-  .mobile-menu.open {
-    transform: translateY(0);
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-  }
-
-  .mobile-menu a {
-    width: 100%;
-    padding: 14px 15px;
-    border-radius: 8px;
-    font-size: 16px;
-  }
-
-  .mobile-menu a:hover {
-    background: #eef8ee;
-    color: #218c46;
-  }
-
-  .mobile-menu a.active {
-    background: #eaf6ea;
-    color: #218c46;
-    font-weight: 700;
-  }
-
-  .mobile-login {
-    margin-top: 8px;
-    background: #218c46 !important;
-    color: white !important;
-    text-align: center;
-  }
-
-  .mobile-login:hover {
-    background: #176d35 !important;
-  }
-}
-
-/* Small phones */
-
-@media (max-width: 380px) {
-
-  .navbar {
-    padding: 0 15px;
-  }
-
-  .logo {
-    font-size: 18px;
-  }
-
-  .menu-toggle {
-    font-size: 25px;
-  }
-
-  .mobile-menu {
-    top: 65px;
-  }
-}
-
-
-
-
-
-/* =========================
+/* =========================================================
    HERO
-========================= */
+========================================================= */
 
 .hero {
-  min-height: 600px;
   width: 100%;
+  min-height: 600px;
+  padding: 70px 8%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 50px;
-  padding: 70px 8%;
   background: linear-gradient(135deg, #eef9ee, #ffffff);
 }
 
@@ -180,7 +146,7 @@ a {
 
 .small-title {
   color: #218c46;
-  font-weight: bold;
+  font-weight: 700;
   letter-spacing: 2px;
   margin-bottom: 20px;
 }
@@ -196,10 +162,10 @@ a {
 }
 
 .hero-text {
+  max-width: 570px;
   font-size: 18px;
   line-height: 1.7;
   color: #647268;
-  max-width: 570px;
 }
 
 .hero-buttons {
@@ -214,35 +180,36 @@ a {
   display: inline-block;
   padding: 15px 25px;
   border-radius: 9px;
-  font-weight: bold;
-  transition: 0.2s;
+  font-weight: 700;
+  transition: 0.2s ease;
 }
 
 .primary-btn {
   background: #218c46;
-  color: white;
+  color: #ffffff;
 }
 
 .primary-btn:hover {
   background: #176d35;
+  transform: translateY(-2px);
 }
 
 .secondary-btn {
   border: 1px solid #218c46;
   color: #218c46;
-  background: white;
+  background: #ffffff;
 }
 
 .secondary-btn:hover {
   background: #218c46;
-  color: white;
+  color: #ffffff;
 }
 
 .hero-image {
   width: 40%;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
 .plant-circle {
@@ -251,16 +218,17 @@ a {
   border-radius: 50%;
   background: #dff3df;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   font-size: clamp(80px, 10vw, 130px);
 }
 
-/* =========================
+/* =========================================================
    FEATURES
-========================= */
+========================================================= */
 
 .features {
+  width: 100%;
   padding: 80px 8%;
   text-align: center;
 }
@@ -270,28 +238,31 @@ a {
 }
 
 .section-text {
+  max-width: 700px;
+  margin: 12px auto 0;
   color: #6c796f;
-  margin-top: 12px;
   line-height: 1.6;
 }
 
 .feature-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  width: 100%;
   margin-top: 45px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .feature-card {
-  background: white;
+  background: #ffffff;
   padding: 30px 20px;
   border-radius: 15px;
   border: 1px solid #e4eee4;
-  transition: 0.2s;
+  transition: 0.25s ease;
 }
 
 .feature-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(33, 140, 70, 0.08);
 }
 
 .feature-icon {
@@ -308,12 +279,13 @@ a {
   line-height: 1.6;
 }
 
-/* =========================
+/* =========================================================
    COMMON PAGE
-========================= */
+========================================================= */
 
 .content-page,
 .scanner-page {
+  width: 100%;
   min-height: 700px;
   padding: 70px 8%;
 }
@@ -325,7 +297,7 @@ a {
 
 .page-heading p {
   color: #218c46;
-  font-weight: bold;
+  font-weight: 700;
   letter-spacing: 2px;
 }
 
@@ -335,13 +307,14 @@ a {
 }
 
 .page-heading span {
+  display: block;
   color: #68766d;
   line-height: 1.6;
 }
 
-/* =========================
+/* =========================================================
    SCANNER
-========================= */
+========================================================= */
 
 .scanner-container {
   width: 100%;
@@ -354,12 +327,13 @@ a {
 
 .upload-box,
 .analysis-box {
-  background: white;
+  width: 100%;
+  min-height: 400px;
+  background: #ffffff;
   border: 1px solid #dfebdf;
   border-radius: 18px;
   padding: 40px;
   text-align: center;
-  min-height: 400px;
 }
 
 .upload-icon {
@@ -376,10 +350,11 @@ a {
 .change-btn {
   display: inline-block;
   background: #218c46;
-  color: white;
+  color: #ffffff;
   padding: 13px 25px;
   border-radius: 8px;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 .upload-btn:hover,
@@ -425,22 +400,23 @@ a {
   padding: 14px;
   border: none;
   background: #218c46;
-  color: white;
+  color: #ffffff;
   border-radius: 8px;
   font-size: 16px;
-  cursor: pointer;
+  transition: 0.2s ease;
 }
 
 .analyze-btn:hover {
   background: #176d35;
 }
 
-/* =========================
+/* =========================================================
    CROPS / DISEASES
-========================= */
+========================================================= */
 
 .crop-grid,
 .disease-grid {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 25px;
@@ -448,16 +424,17 @@ a {
 
 .crop-card,
 .disease-card {
-  background: white;
+  background: #ffffff;
   padding: 30px;
   border-radius: 15px;
   border: 1px solid #e1ebe1;
-  transition: 0.2s;
+  transition: 0.25s ease;
 }
 
 .crop-card:hover,
 .disease-card:hover {
   transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(33, 140, 70, 0.08);
 }
 
 .crop-icon,
@@ -479,22 +456,29 @@ a {
   color: #218c46;
   padding: 10px 15px;
   border-radius: 7px;
-  cursor: pointer;
+  transition: 0.2s ease;
 }
 
-/* =========================
+.crop-card button:hover,
+.disease-card button:hover {
+  background: #218c46;
+  color: #ffffff;
+}
+
+/* =========================================================
    WEATHER
-========================= */
+========================================================= */
 
 .weather-card {
   width: 100%;
   max-width: 650px;
   margin: auto;
   text-align: center;
-  background: white;
+  background: #ffffff;
   padding: 45px;
   border-radius: 20px;
   border: 1px solid #e1ebe1;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
 }
 
 .weather-icon {
@@ -503,7 +487,7 @@ a {
 
 .temperature {
   font-size: clamp(50px, 8vw, 65px);
-  font-weight: bold;
+  font-weight: 700;
   margin: 15px 0;
 }
 
@@ -530,15 +514,15 @@ a {
   color: #218c46;
 }
 
-/* =========================
-   EXPERT
-========================= */
+/* =========================================================
+   EXPERT FORM
+========================================================= */
 
 .expert-form {
   width: 100%;
   max-width: 650px;
   margin: auto;
-  background: white;
+  background: #ffffff;
   padding: 35px;
   border-radius: 15px;
   border: 1px solid #e1ebe1;
@@ -562,6 +546,7 @@ a {
 
 .expert-form textarea {
   resize: vertical;
+  min-height: 120px;
 }
 
 .expert-form button {
@@ -569,9 +554,8 @@ a {
   padding: 14px;
   border: none;
   background: #218c46;
-  color: white;
+  color: #ffffff;
   border-radius: 8px;
-  cursor: pointer;
 }
 
 .success-message {
@@ -580,12 +564,13 @@ a {
   text-align: center;
 }
 
-/* =========================
+/* =========================================================
    LOGIN
-========================= */
+========================================================= */
 
 .auth-page {
-  min-height: calc(100vh - 75px);
+  width: 100%;
+  min-height: calc(100vh - 72px);
   padding: 50px 20px;
   display: flex;
   justify-content: center;
@@ -596,7 +581,7 @@ a {
 .login-card {
   width: 100%;
   max-width: 420px;
-  background: white;
+  background: #ffffff;
   padding: 40px;
   border-radius: 18px;
   text-align: center;
@@ -634,9 +619,8 @@ a {
   padding: 14px;
   border: none;
   background: #218c46;
-  color: white;
+  color: #ffffff;
   border-radius: 8px;
-  cursor: pointer;
 }
 
 .register-text {
@@ -645,20 +629,22 @@ a {
 
 .register-text a {
   color: #218c46;
+  font-weight: 600;
 }
 
-/* =========================
+/* =========================================================
    DASHBOARD
-========================= */
+========================================================= */
 
 .dashboard {
+  width: 100%;
   min-height: 700px;
   padding: 60px 8%;
 }
 
 .dashboard-header p {
   color: #218c46;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .dashboard-header h1 {
@@ -674,10 +660,15 @@ a {
 }
 
 .dashboard-card {
-  background: white;
+  background: #ffffff;
   padding: 25px;
   border-radius: 15px;
   border: 1px solid #e1ebe1;
+  transition: 0.2s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-3px);
 }
 
 .dashboard-card span {
@@ -694,7 +685,7 @@ a {
 }
 
 .recent-scans {
-  background: white;
+  background: #ffffff;
   padding: 30px;
   border-radius: 15px;
   border: 1px solid #e1ebe1;
@@ -706,6 +697,10 @@ a {
   gap: 15px;
   padding: 18px 0;
   border-bottom: 1px solid #edf1ed;
+}
+
+.scan-row:last-child {
+  border-bottom: none;
 }
 
 .scan-row > span:first-child {
@@ -721,13 +716,14 @@ a {
   margin-top: 5px;
 }
 
-/* =========================
+/* =========================================================
    FOOTER
-========================= */
+========================================================= */
 
 .footer {
+  width: 100%;
   background: #102418;
-  color: white;
+  color: #ffffff;
   padding: 55px 8% 80px;
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
@@ -749,6 +745,14 @@ a {
   line-height: 1.8;
 }
 
+.footer a {
+  transition: 0.2s ease;
+}
+
+.footer a:hover {
+  color: #7bd28e;
+}
+
 .copyright {
   position: absolute;
   bottom: 15px;
@@ -756,22 +760,23 @@ a {
   color: #89968c;
 }
 
-/* ==================================================
+/* =========================================================
    TABLET
-================================================== */
+========================================================= */
 
 @media (max-width: 1100px) {
 
   .navbar {
-    padding: 0 4%;
+    padding: 0 5%;
   }
 
   .nav-links {
-    gap: 14px;
+    gap: 16px;
   }
 
   .hero {
     padding: 60px 5%;
+    gap: 35px;
   }
 
   .features,
@@ -783,40 +788,103 @@ a {
   }
 
   .feature-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dashboard-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .crop-grid,
   .disease-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* ==================================================
-   TABLET / SMALL LAPTOP
-================================================== */
+/* =========================================================
+   MOBILE NAVBAR + TABLET
+========================================================= */
 
 @media (max-width: 850px) {
 
   .navbar {
     min-height: 70px;
+    padding: 0 25px;
   }
 
-  .nav-links {
-    gap: 10px;
-    font-size: 13px;
+  /* Desktop menu hide */
+  .desktop-menu {
+    display: none !important;
   }
+
+  /* Hamburger show */
+  .menu-toggle {
+    display: block;
+  }
+
+  /* Mobile menu */
+  .mobile-menu {
+    position: absolute;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    padding: 15px 20px 25px;
+    background: #ffffff;
+    border-top: 1px solid #e5eee5;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    transform: translateY(-20px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition: all 0.25s ease;
+  }
+
+  .mobile-menu.open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .mobile-menu a {
+    width: 100%;
+    padding: 14px 15px;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #18321f;
+  }
+
+  .mobile-menu a:hover {
+    background: #eef8ee;
+    color: #218c46;
+  }
+
+  .mobile-menu a.active {
+    background: #eaf6ea;
+    color: #218c46;
+    font-weight: 700;
+  }
+
+  .mobile-login {
+    margin-top: 8px;
+    background: #218c46 !important;
+    color: #ffffff !important;
+    text-align: center;
+  }
+
+  /* HERO */
 
   .hero {
     min-height: auto;
     flex-direction: column;
     text-align: center;
-    padding-top: 60px;
-    padding-bottom: 60px;
+    padding: 60px 5%;
   }
 
   .hero-content {
@@ -825,7 +893,8 @@ a {
   }
 
   .hero-text {
-    margin: auto;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .hero-buttons {
@@ -837,12 +906,16 @@ a {
     margin-top: 20px;
   }
 
+  /* SCANNER */
+
   .scanner-container {
     grid-template-columns: 1fr;
   }
 
+  /* FOOTER */
+
   .footer {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .footer > div:first-child {
@@ -850,9 +923,9 @@ a {
   }
 }
 
-/* ==================================================
+/* =========================================================
    MOBILE
-================================================== */
+========================================================= */
 
 @media (max-width: 650px) {
 
@@ -865,22 +938,12 @@ a {
     font-size: 20px;
   }
 
-  .nav-links {
-    gap: 0;
+  .menu-toggle {
+    font-size: 27px;
   }
 
-  /*
-    Mobile par extra navigation hide,
-    Login button visible rahega.
-  */
-
-  .nav-links a:not(.login-btn) {
-    display: none;
-  }
-
-  .login-btn {
-    padding: 9px 15px;
-    font-size: 13px;
+  .mobile-menu {
+    top: 65px;
   }
 
   /* HERO */
@@ -889,17 +952,25 @@ a {
     padding: 45px 20px;
   }
 
+  .small-title {
+    font-size: 14px;
+    letter-spacing: 1.5px;
+  }
+
   .hero h1 {
     font-size: 38px;
+    line-height: 1.12;
   }
 
   .hero-text {
     font-size: 16px;
+    line-height: 1.6;
   }
 
   .hero-buttons {
-    flex-direction: column;
     width: 100%;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .primary-btn,
@@ -919,14 +990,29 @@ a {
     padding: 55px 20px;
   }
 
+  .features h2 {
+    font-size: 30px;
+  }
+
+  .section-text {
+    font-size: 15px;
+  }
+
   .feature-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+    margin-top: 30px;
+  }
+
+  .feature-card {
+    padding: 25px 20px;
   }
 
   /* COMMON */
 
   .content-page,
   .scanner-page {
+    min-height: auto;
     padding: 50px 20px;
   }
 
@@ -934,12 +1020,15 @@ a {
     margin-bottom: 35px;
   }
 
+  .page-heading p {
+    font-size: 13px;
+  }
+
   .page-heading h1 {
     font-size: 31px;
   }
 
   .page-heading span {
-    display: block;
     font-size: 14px;
     margin-top: 10px;
   }
@@ -966,6 +1055,7 @@ a {
   .crop-grid,
   .disease-grid {
     grid-template-columns: 1fr;
+    gap: 18px;
   }
 
   .crop-card,
@@ -979,8 +1069,13 @@ a {
     padding: 30px 18px;
   }
 
+  .weather-icon {
+    font-size: 55px;
+  }
+
   .weather-details {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   /* EXPERT */
@@ -992,6 +1087,7 @@ a {
   /* LOGIN */
 
   .auth-page {
+    min-height: calc(100vh - 65px);
     padding: 35px 18px;
   }
 
@@ -999,31 +1095,51 @@ a {
     padding: 30px 20px;
   }
 
+  .login-logo {
+    font-size: 45px;
+  }
+
   /* DASHBOARD */
 
   .dashboard {
+    min-height: auto;
     padding: 45px 20px;
   }
 
   .dashboard-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    margin: 30px 0;
   }
 
   .dashboard-card {
     padding: 20px 15px;
   }
 
+  .dashboard-card span {
+    font-size: 30px;
+  }
+
   .dashboard-card h3 {
     font-size: 14px;
+    margin: 12px 0 5px;
   }
 
   .dashboard-card strong {
-    font-size: 24px;
+    font-size: 23px;
   }
 
   .recent-scans {
     padding: 20px 15px;
+  }
+
+  .scan-row {
+    gap: 10px;
+    padding: 15px 0;
+  }
+
+  .scan-row > span:first-child {
+    font-size: 30px;
   }
 
   /* FOOTER */
@@ -1042,21 +1158,35 @@ a {
     left: 20px;
     right: 20px;
     text-align: center;
+    font-size: 13px;
   }
 }
 
-/* ==================================================
-   VERY SMALL PHONES
-================================================== */
+/* =========================================================
+   SMALL PHONES
+========================================================= */
 
 @media (max-width: 380px) {
+
+  .navbar {
+    min-height: 62px;
+    padding: 0 15px;
+  }
 
   .logo {
     font-size: 18px;
   }
 
-  .login-btn {
-    padding: 8px 11px;
+  .menu-toggle {
+    font-size: 25px;
+  }
+
+  .mobile-menu {
+    top: 62px;
+  }
+
+  .hero {
+    padding: 40px 15px;
   }
 
   .hero h1 {
@@ -1067,16 +1197,91 @@ a {
     font-size: 15px;
   }
 
+  .small-title {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
   .plant-circle {
     width: 180px;
     font-size: 75px;
+  }
+
+  .features {
+    padding: 45px 15px;
+  }
+
+  .content-page,
+  .scanner-page {
+    padding: 45px 15px;
+  }
+
+  .page-heading h1 {
+    font-size: 28px;
+  }
+
+  .upload-box,
+  .analysis-box {
+    padding: 22px 15px;
+  }
+
+  .crop-card,
+  .disease-card {
+    padding: 22px;
+  }
+
+  .weather-card {
+    padding: 25px 15px;
+  }
+
+  .expert-form {
+    padding: 22px 15px;
+  }
+
+  .login-card {
+    padding: 25px 17px;
+  }
+
+  .dashboard {
+    padding: 40px 15px;
   }
 
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
 
-  .page-heading h1 {
+  .dashboard-card {
+    padding: 20px;
+  }
+
+  .footer {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .copyright {
+    left: 15px;
+    right: 15px;
+  }
+}
+
+/* =========================================================
+   EXTRA SMALL
+========================================================= */
+
+@media (max-width: 320px) {
+
+  .hero h1 {
     font-size: 28px;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    padding: 13px 18px;
+    font-size: 14px;
+  }
+
+  .dashboard-card strong {
+    font-size: 21px;
   }
 }
