@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function Footer() {
   return (
     <footer className="footer">
@@ -10,15 +12,18 @@ function Footer() {
 
       <div>
         <h3>Quick Links</h3>
-        <p>Crop Scanner</p>
-        <p>Crop Guide</p>
-        <p>Weather</p>
-        <p>Expert Advice</p>
+        <p><Link to="/scanner">📷 Crop Scanner</Link></p>
+        <p><Link to="/crops">🌱 Crop Guide</Link></p>
+        <p><Link to="/diseases">🦠 Plant Diseases</Link></p>
+        <p><Link to="/weather">🌦️ Weather</Link></p>
+        <p><Link to="/expert">👨‍🌾 Expert Advice</Link></p>
       </div>
 
       <div>
         <h3>Contact</h3>
-        <p>Email: support@cropdoctor.com</p>
+        <p>Email: cropdocto7800@gmail.com</p>
+        <p>Phone: +91 7065942905</p>
+        <p>Prayagraj Up.</p>
         <p>India</p>
       </div>
 

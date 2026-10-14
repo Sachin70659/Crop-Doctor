@@ -14,8 +14,8 @@ function Home() {
           </h1>
 
           <p className="hero-text">
-            Upload a crop image, identify possible diseases and get useful
-            agricultural guidance from one platform.
+            Upload a crop image, identify possible plant diseases, check local weather,
+            and get verified agricultural guidance all in one platform.
           </p>
 
           <div className="hero-buttons">
@@ -24,7 +24,7 @@ function Home() {
             </Link>
 
             <Link to="/crops" className="secondary-btn">
-              Explore Crops →
+              Explore Crop Guide →
             </Link>
           </div>
         </div>
@@ -40,42 +40,41 @@ function Home() {
         <h2>Everything Your Farm Needs</h2>
 
         <p className="section-text">
-          Simple digital tools to help farmers understand and manage their
-          crops.
+          Simple digital agronomy tools to help farmers diagnose plant leaf problems and make informed crop decisions.
         </p>
 
         <div className="feature-grid">
-          <div className="feature-card">
+          <Link to="/scanner" className="feature-card">
             <div className="feature-icon">📷</div>
             <h3>AI Crop Scanner</h3>
             <p>
-              Upload a crop image and check for possible diseases.
+              Upload plant leaf images to detect early or late blight, blast, rust, and other diseases.
             </p>
-          </div>
+          </Link>
 
-          <div className="feature-card">
+          <Link to="/crops" className="feature-card">
             <div className="feature-icon">🌱</div>
             <h3>Crop Guide</h3>
             <p>
-              Learn about crops, soil, irrigation and cultivation.
+              Learn about seasonal cultivation, soil compatibility, duration, and best farming practices.
             </p>
-          </div>
+          </Link>
 
-          <div className="feature-card">
+          <Link to="/weather" className="feature-card">
             <div className="feature-icon">🌦️</div>
-            <h3>Weather</h3>
+            <h3>Live Farm Weather</h3>
             <p>
-              Get weather information useful for farming decisions.
+              Check humidity, rain probability, wind speeds, and temperatures for timely pesticide & fertilizer application.
             </p>
-          </div>
+          </Link>
 
-          <div className="feature-card">
+          <Link to="/expert" className="feature-card">
             <div className="feature-icon">👨‍🌾</div>
             <h3>Expert Advice</h3>
             <p>
-              Send your farming problem to an agricultural expert.
+              Submit tough field problems and symptoms to agricultural officers for verified guidance.
             </p>
-          </div>
+          </Link>
         </div>
       </section>
     </div>
