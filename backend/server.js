@@ -52,29 +52,38 @@ function isValidKey(val, placeholder) {
   );
 }
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.LLM_API_KEY;
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
-const LLM_MODEL = process.env.LLM_MODEL || "gemini-1.5-flash";
+function getGeminiClient() {
+  const key = process.env.GEMINI_API_KEY || process.env.LLM_API_KEY;
+  if (isValidKey(key, "your_gemini_api_key_here")) {
+    return new GoogleGenerativeAI(key.trim());
+  }
+  return null;
+}
 
-const isGeminiConfigured = isValidKey(GEMINI_KEY, "your_gemini_api_key_here");
-const isOpenAIConfigured = isValidKey(OPENAI_KEY, "your_openai_api_key_here");
+function getOpenAIClient() {
+  const key = process.env.OPENAI_API_KEY;
+  if (isValidKey(key, "your_openai_api_key_here")) {
+    return new OpenAI({ apiKey: key.trim() });
+  }
+  return null;
+}
 
-const geminiClient = isGeminiConfigured ? new GoogleGenerativeAI(GEMINI_KEY) : null;
-const openaiClient = isOpenAIConfigured ? new OpenAI({ apiKey: OPENAI_KEY }) : null;
+function getHfClient() {
+  const key = process.env.HF_TOKEN;
+  if (isValidKey(key, "hf_your_private_token_here")) {
+    return new InferenceClient(key.trim());
+  }
+  return null;
+}
 
-// HuggingFace fallback classifier
-const isHfConfigured = isValidKey(process.env.HF_TOKEN, "hf_your_private_token_here");
-const hf = isHfConfigured ? new InferenceClient(process.env.HF_TOKEN) : null;
+function getActiveLLMProvider() {
+  if (getGeminiClient()) return "gemini";
+  if (getOpenAIClient()) return "openai";
+  if (getHfClient()) return "huggingface";
+  return "demo";
+}
 
-const activeLLMProvider = isGeminiConfigured
-  ? "gemini"
-  : isOpenAIConfigured
-    ? "openai"
-    : isHfConfigured
-      ? "huggingface"
-      : "demo";
-
-console.log(`[AI] Active provider: ${activeLLMProvider.toUpperCase()}`);
+console.log(`[AI] Active provider: ${getActiveLLMProvider().toUpperCase()}`);
 
 // =========================================================
 // DATABASE MODELS
@@ -295,30 +304,58 @@ IMPORTANT — Return ONLY valid JSON, no markdown fences, no extra text. Use thi
  * Analyse an image buffer with Google Gemini Vision.
  */
 async function analyseWithGemini(imageBuffer, mimeType) {
-  const modelName = LLM_MODEL.startsWith("gemini") ? LLM_MODEL : "gemini-1.5-flash";
-  const model = geminiClient.getGenerativeModel({ model: modelName });
+  const client = getGeminiClient();
+  if (!client) {
+    throw new Error("Gemini API key is not configured.");
+  }
+
+  const configuredModel = (process.env.LLM_MODEL || "gemini-1.5-flash").trim();
+  const modelName = configuredModel.startsWith("gemini") ? configuredModel : "gemini-1.5-flash";
+
+  const model = client.getGenerativeModel({
+    model: modelName,
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.2
+    }
+  });
+
+  const normalizedMimeType = mimeType === "image/jpg" ? "image/jpeg" : mimeType;
 
   const imageData = {
     inlineData: {
       data: imageBuffer.toString("base64"),
-      mimeType
+      mimeType: normalizedMimeType
     }
   };
 
   const result = await model.generateContent([VISION_SYSTEM_PROMPT, imageData]);
   const text = result.response.text().trim();
-  return JSON.parse(text);
+
+  // Strip accidental markdown fences and extract JSON safely
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const jsonString = jsonMatch
+    ? jsonMatch[0]
+    : text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+
+  return JSON.parse(jsonString);
 }
 
 /**
  * Analyse an image buffer with OpenAI GPT-4 Vision.
  */
 async function analyseWithOpenAI(imageBuffer, mimeType) {
-  const modelName = LLM_MODEL.startsWith("gpt") ? LLM_MODEL : "gpt-4o-mini";
+  const client = getOpenAIClient();
+  if (!client) {
+    throw new Error("OpenAI API key is not configured.");
+  }
+
+  const configuredModel = (process.env.LLM_MODEL || "gpt-4o-mini").trim();
+  const modelName = configuredModel.startsWith("gpt") ? configuredModel : "gpt-4o-mini";
   const base64 = imageBuffer.toString("base64");
   const dataUrl = `data:${mimeType};base64,${base64}`;
 
-  const response = await openaiClient.chat.completions.create({
+  const response = await client.chat.completions.create({
     model: modelName,
     messages: [
       { role: "system", content: VISION_SYSTEM_PROMPT },
@@ -335,9 +372,12 @@ async function analyseWithOpenAI(imageBuffer, mimeType) {
   });
 
   const text = (response.choices[0]?.message?.content || "").trim();
-  // Strip any accidental markdown fences
-  const cleaned = text.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
-  return JSON.parse(cleaned);
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const jsonString = jsonMatch
+    ? jsonMatch[0]
+    : text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+
+  return JSON.parse(jsonString);
 }
 
 /**
@@ -437,16 +477,20 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
+  const geminiAvailable = Boolean(getGeminiClient());
+  const openaiAvailable = Boolean(getOpenAIClient());
+  const hfAvailable = Boolean(getHfClient());
+
   res.json({
     server: "ok",
     database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-    ai: activeLLMProvider,
+    ai: getActiveLLMProvider(),
     models: {
-      llm: isGeminiConfigured
-        ? `Gemini (${LLM_MODEL})`
-        : isOpenAIConfigured
-          ? `OpenAI (${LLM_MODEL})`
-          : isHfConfigured
+      llm: geminiAvailable
+        ? `Gemini (${process.env.LLM_MODEL || "gemini-1.5-flash"})`
+        : openaiAvailable
+          ? `OpenAI (${process.env.LLM_MODEL || "gpt-4o-mini"})`
+          : hfAvailable
             ? `HuggingFace (${process.env.HF_MODEL})`
             : "Demo mode — no API key configured"
     }
@@ -571,7 +615,8 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
     let usedProvider = "demo";
 
     // ── 1. Try Gemini Vision ────────────────────────────────────
-    if (geminiClient) {
+    const gemini = getGeminiClient();
+    if (gemini) {
       try {
         console.log("[Gemini] Sending image for plant disease analysis...");
         llmResult = await analyseWithGemini(imageBuffer, mimeType);
@@ -583,7 +628,8 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
     }
 
     // ── 2. Try OpenAI Vision if Gemini failed ───────────────────
-    if (!llmResult && openaiClient) {
+    const openai = getOpenAIClient();
+    if (!llmResult && openai) {
       try {
         console.log("[OpenAI] Sending image for plant disease analysis...");
         llmResult = await analyseWithOpenAI(imageBuffer, mimeType);
@@ -595,10 +641,11 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
     }
 
     // ── 3. Fall back to HuggingFace classifier ──────────────────
-    if (!llmResult && hf && process.env.HF_MODEL) {
+    const hfClient = getHfClient();
+    if (!llmResult && hfClient && process.env.HF_MODEL) {
       try {
         console.log("[HuggingFace] Falling back to image classifier...");
-        const predictions = await hf.imageClassification({
+        const predictions = await hfClient.imageClassification({
           data: imageBuffer,
           model: process.env.HF_MODEL
         });
@@ -830,12 +877,13 @@ export async function startServer() {
 
   return new Promise((resolve) => {
     const server = app.listen(PORT, () => {
+      const active = getActiveLLMProvider();
       console.log(`\n🌱 Crop Doctor API  →  http://localhost:${PORT}`);
-      console.log(`🤖 AI Provider     →  ${activeLLMProvider.toUpperCase()}`);
-      if (activeLLMProvider === "demo") {
+      console.log(`🤖 AI Provider     →  ${active.toUpperCase()}`);
+      if (active === "demo") {
         console.log("⚠️  No LLM key found. Add GEMINI_API_KEY or OPENAI_API_KEY to backend/.env\n");
       } else {
-        console.log(`✅ LLM Vision ready — plant images will be analysed by ${activeLLMProvider}\n`);
+        console.log(`✅ LLM Vision ready — plant images will be analysed by ${active}\n`);
       }
       resolve(server);
     });
