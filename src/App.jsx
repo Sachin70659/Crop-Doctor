@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -11,6 +12,7 @@ import Weather from "./pages/Weather";
 import Expert from "./pages/Expert";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Shop from "./pages/Shop";
 
 function App() {
   return (
@@ -27,6 +29,30 @@ function App() {
           <Route path="/expert" element={<Expert />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
+
+          {/* New Shop Page */}
+          <Route path="/shop" element={<Shop />} />
+
+          {/* 404 Page */}
+          <Route
+            path="*"
+            element={
+              <div className="p-10 text-center">
+                <h1 className="text-3xl font-bold text-green-700">
+                  404 - Page Not Found
+                </h1>
+                <p className="mt-2">
+                  The page you are looking for does not exist.
+                </p>
+                <a
+                  href="/"
+                  className="mt-4 inline-block text-green-700 underline"
+                >
+                  Back to Home
+                </a>
+              </div>
+            }
+          />
         </Routes>
       </main>
 

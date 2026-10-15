@@ -5,8 +5,7 @@ function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(() => {
     try {
-      const stored = localStorage.getItem("user");
-      return stored ? JSON.parse(stored) : null;
+      return JSON.parse(localStorage.getItem("user")) || null;
     } catch {
       return null;
     }
@@ -14,11 +13,11 @@ function Navbar() {
 
   const navigate = useNavigate();
 
+  // Update login state
   useEffect(() => {
     const updateAuth = () => {
       try {
-        const stored = localStorage.getItem("user");
-        setUser(stored ? JSON.parse(stored) : null);
+        setUser(JSON.parse(localStorage.getItem("user")) || null);
       } catch {
         setUser(null);
       }
@@ -33,18 +32,29 @@ function Navbar() {
     };
   }, []);
 
-  const closeMenu = () => {
+  // Close menu after navigation
+  useEffect(() => {
     setMenuOpen(false);
-  };
+  }, [navigate]);
 
+  const closeMenu = () => setMenuOpen(false);
+
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
-    window.dispatchEvent(new Event("auth-changed"));
     closeMenu();
+
+    window.dispatchEvent(new Event("auth-changed"));
     navigate("/login");
   };
+
+  const navClass = ({ isActive }) =>
+    `nav-link ${isActive ? "active" : ""}`;
+
+  const mobileClass = ({ isActive }) =>
+    `mobile-nav-link ${isActive ? "active" : ""}`;
 
   return (
     <nav className="navbar">
@@ -55,23 +65,50 @@ function Navbar() {
 
       {/* Desktop Menu */}
       <div className="nav-links desktop-menu">
-        <NavLink to="/">Home</NavLink>
-        <NavLink to="/scanner">Crop Scanner</NavLink>
-        <NavLink to="/crops">Crops</NavLink>
-        <NavLink to="/diseases">Diseases</NavLink>
-        <NavLink to="/weather">Weather</NavLink>
-        <NavLink to="/expert">Expert</NavLink>
-        {user && <NavLink to="/dashboard">Dashboard</NavLink>}
+        <NavLink to="/" end className={navClass}>
+          Home
+        </NavLink>
+
+        <NavLink to="/scanner" className={navClass}>
+          Crop Scanner
+        </NavLink>
+
+        <NavLink to="/crops" className={navClass}>
+          Crops
+        </NavLink>
+
+        <NavLink to="/diseases" className={navClass}>
+          Diseases
+        </NavLink>
+
+        <NavLink to="/weather" className={navClass}>
+          Weather
+        </NavLink>
+
+        <NavLink to="/expert" className={navClass}>
+          Expert
+        </NavLink>
+
+        <NavLink to="/shop" className={navClass}>
+          Shop
+        </NavLink>
+
+        {user && (
+          <NavLink to="/dashboard" className={navClass}>
+            Dashboard
+          </NavLink>
+        )}
 
         {user ? (
           <div className="user-nav-actions">
-            <span className="user-nav-name" title={user.email}>
-              👤 {user.name}
+            <span className="user-nav-name">
+              👤 {user.name || "User"}
             </span>
+
             <button
               type="button"
-              onClick={handleLogout}
               className="logout-nav-btn"
+              onClick={handleLogout}
             >
               Logout
             </button>
@@ -87,57 +124,102 @@ function Navbar() {
       <button
         type="button"
         className="menu-toggle"
-        onClick={() => setMenuOpen(!menuOpen)}
-        aria-label="Toggle menu"
+        onClick={() => setMenuOpen((prev) => !prev)}
+        aria-label={menuOpen ? "Close menu" : "Open menu"}
+        aria-expanded={menuOpen}
       >
         {menuOpen ? "✕" : "☰"}
       </button>
 
       {/* Mobile Menu */}
       <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
-        <NavLink to="/" onClick={closeMenu}>
+        <NavLink
+          to="/"
+          end
+          className={mobileClass}
+          onClick={closeMenu}
+        >
           🏠 Home
         </NavLink>
 
-        <NavLink to="/scanner" onClick={closeMenu}>
+        <NavLink
+          to="/scanner"
+          className={mobileClass}
+          onClick={closeMenu}
+        >
           📷 Crop Scanner
         </NavLink>
 
-        <NavLink to="/crops" onClick={closeMenu}>
+        <NavLink
+          to="/crops"
+          className={mobileClass}
+          onClick={closeMenu}
+        >
           🌱 Crops
         </NavLink>
 
-        <NavLink to="/diseases" onClick={closeMenu}>
+        <NavLink
+          to="/diseases"
+          className={mobileClass}
+          onClick={closeMenu}
+        >
           🦠 Diseases
         </NavLink>
 
-        <NavLink to="/weather" onClick={closeMenu}>
+        <NavLink
+          to="/weather"
+          className={mobileClass}
+          onClick={closeMenu}
+        >
           🌦️ Weather
         </NavLink>
 
-        <NavLink to="/expert" onClick={closeMenu}>
+        <NavLink
+          to="/expert"
+          className={mobileClass}
+          onClick={closeMenu}
+        >
           👨‍🔬 Expert Advice
         </NavLink>
 
+        <NavLink
+          to="/shop"
+          className={mobileClass}
+          onClick={closeMenu}
+        >
+          🛒 Shop
+        </NavLink>
+
         {user && (
-          <NavLink to="/dashboard" onClick={closeMenu}>
+          <NavLink
+            to="/dashboard"
+            className={mobileClass}
+            onClick={closeMenu}
+          >
             📊 Dashboard
           </NavLink>
         )}
 
         {user ? (
           <div className="mobile-user-section">
-            <span className="mobile-user-name">👤 {user.name}</span>
+            <span className="mobile-user-name">
+              👤 {user.name || "User"}
+            </span>
+
             <button
               type="button"
-              onClick={handleLogout}
               className="mobile-logout-btn"
+              onClick={handleLogout}
             >
               🚪 Logout
             </button>
           </div>
         ) : (
-          <NavLink to="/login" onClick={closeMenu} className="mobile-login">
+          <NavLink
+            to="/login"
+            className="mobile-login"
+            onClick={closeMenu}
+          >
             🔐 Login
           </NavLink>
         )}
