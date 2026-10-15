@@ -162,6 +162,58 @@ async function seedCrops() {
 }
 
 // =========================================================
+// DATABASE CONNECTION (SERVERLESS CACHED)
+// =========================================================
+
+let cachedDbPromise = null;
+let cropsSeeded = false;
+
+async function connectDB() {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  if (!cachedDbPromise) {
+    const mongoUri = process.env.MONGO_URI;
+    if (!mongoUri) {
+      console.warn("⚠️ MONGO_URI is not set in environment.");
+      return null;
+    }
+
+    cachedDbPromise = mongoose.connect(mongoUri)
+      .then(async (conn) => {
+        console.log("MongoDB connected.");
+        if (!cropsSeeded) {
+          try {
+            await seedCrops();
+            cropsSeeded = true;
+            console.log("Starter crop data ready.");
+          } catch (seedErr) {
+            console.error("Starter crop seed warning:", seedErr.message);
+          }
+        }
+        return conn;
+      })
+      .catch((err) => {
+        cachedDbPromise = null;
+        console.error("MongoDB connection error:", err.message);
+        throw err;
+      });
+  }
+
+  return cachedDbPromise;
+}
+
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error("DB connection error in request:", err.message);
+  }
+  next();
+});
+
+// =========================================================
 // AUTH UTILITIES
 // =========================================================
 
@@ -767,31 +819,35 @@ app.use((error, req, res, _next) => {
   res.status(500).json({ error: "Unexpected server error." });
 });
 
-// ---------- START ----------
+// ---------- START / SERVERLESS EXPORT ----------
 
-async function startServer() {
+export async function startServer() {
   if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
-    throw new Error("Set MONGO_URI and JWT_SECRET in backend/.env");
+    console.warn("⚠️ MONGO_URI or JWT_SECRET is not set in backend environment.");
   }
 
-  await mongoose.connect(process.env.MONGO_URI);
-  console.log("MongoDB connected.");
+  await connectDB();
 
-  await seedCrops();
-  console.log("Starter crop data ready.");
-
-  app.listen(PORT, () => {
-    console.log(`\n🌱 Crop Doctor API  →  http://localhost:${PORT}`);
-    console.log(`🤖 AI Provider     →  ${activeLLMProvider.toUpperCase()}`);
-    if (activeLLMProvider === "demo") {
-      console.log("⚠️  No LLM key found. Add GEMINI_API_KEY or OPENAI_API_KEY to backend/.env\n");
-    } else {
-      console.log(`✅ LLM Vision ready — plant images will be analysed by ${activeLLMProvider}\n`);
-    }
+  return new Promise((resolve) => {
+    const server = app.listen(PORT, () => {
+      console.log(`\n🌱 Crop Doctor API  →  http://localhost:${PORT}`);
+      console.log(`🤖 AI Provider     →  ${activeLLMProvider.toUpperCase()}`);
+      if (activeLLMProvider === "demo") {
+        console.log("⚠️  No LLM key found. Add GEMINI_API_KEY or OPENAI_API_KEY to backend/.env\n");
+      } else {
+        console.log(`✅ LLM Vision ready — plant images will be analysed by ${activeLLMProvider}\n`);
+      }
+      resolve(server);
+    });
   });
 }
 
-startServer().catch((error) => {
-  console.error("Backend startup failed:", error.message);
-  process.exit(1);
-});
+// Only listen automatically when running directly/locally (not in serverless environment)
+if (!process.env.VERCEL) {
+  startServer().catch((error) => {
+    console.error("Backend startup failed:", error.message);
+    process.exit(1);
+  });
+}
+
+export default app;
