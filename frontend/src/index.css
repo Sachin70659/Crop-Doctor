@@ -2859,8 +2859,8 @@ a {
   font-weight: 700;
   text-transform: uppercase;
 }
-.badge-role.admin { background: #fef3c7; color: #92400e; }
-.badge-role.farmer { background: #f1f5f9; color: #475569; }
+.badge-role.admin { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge-role.user, .badge-role.farmer { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
 
 .badge-severity {
   padding: 4px 10px;

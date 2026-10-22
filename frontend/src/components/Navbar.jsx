@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const { user: authUser, logout } = useAuth();
   const [user, setUser] = useState(() => {
+    if (authUser) return authUser;
     try {
       return JSON.parse(localStorage.getItem("user")) || null;
     } catch {
@@ -23,7 +27,13 @@ function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Update auth state on login/logout
+  // Update auth state on login/logout or context change
+  useEffect(() => {
+    if (authUser) {
+      setUser(authUser);
+    }
+  }, [authUser]);
+
   useEffect(() => {
     const updateAuth = () => {
       try {
@@ -61,12 +71,10 @@ function Navbar() {
 
   const closeMenu = () => setMenuOpen(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const handleLogout = async () => {
+    await logout();
     setUser(null);
     closeMenu();
-    window.dispatchEvent(new Event("auth-changed"));
     navigate("/login");
   };
 
@@ -75,6 +83,8 @@ function Navbar() {
 
   const mobileClass = ({ isActive }) =>
     `mobile-nav-link ${isActive ? "active" : ""}`;
+
+  const hasAdminRole = Boolean(user && user.role === "admin");
 
   return (
     <>
@@ -123,10 +133,13 @@ function Navbar() {
                 Dashboard
               </NavLink>
             )}
-            <NavLink to="/admin" className={navClass}>
-              <span style={{ fontSize: "10px", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "6px", fontWeight: "800", marginRight: "4px" }}>Admin</span>
-              Portal
-            </NavLink>
+            {/* ONLY visible to authenticated Admins */}
+            {hasAdminRole && (
+              <NavLink to="/admin" className={navClass}>
+                <span style={{ fontSize: "10px", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "6px", fontWeight: "800", marginRight: "4px" }}>Admin</span>
+                Portal
+              </NavLink>
+            )}
           </nav>
 
           {/* User Actions */}
@@ -137,7 +150,14 @@ function Navbar() {
                   <span className="user-avatar-initials">
                     {(user.name || user.email || "U").charAt(0).toUpperCase()}
                   </span>
-                  <span className="user-display-name">{user.name?.split(" ")[0] || "Farmer"}</span>
+                  <span className="user-display-name">
+                    {user.name?.split(" ")[0] || (hasAdminRole ? "Admin" : "Farmer")}
+                    {hasAdminRole && (
+                      <span style={{ marginLeft: "6px", fontSize: "10px", background: "#f59e0b", color: "#ffffff", padding: "2px 6px", borderRadius: "6px", fontWeight: "800", verticalAlign: "middle" }}>
+                        ADMIN
+                      </span>
+                    )}
+                  </span>
                 </Link>
                 <button
                   type="button"
@@ -218,19 +238,19 @@ function Navbar() {
           </NavLink>
           <NavLink to="/crops" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">🌱</span>
-            <span>Crop Encyclopedia</span>
+            <span>Crops Guide</span>
           </NavLink>
           <NavLink to="/diseases" className={mobileClass} onClick={closeMenu}>
-            <span className="mobile-icon">🦠</span>
+            <span className="mobile-icon">🔬</span>
             <span>Plant Diseases</span>
           </NavLink>
           <NavLink to="/weather" className={mobileClass} onClick={closeMenu}>
-            <span className="mobile-icon">🌦️</span>
-            <span>Farm Weather</span>
+            <span className="mobile-icon">⛅</span>
+            <span>Weather & Forecast</span>
           </NavLink>
           <NavLink to="/expert" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">👨‍🌾</span>
-            <span>Expert Agronomist</span>
+            <span>Agronomist Consult</span>
           </NavLink>
           <NavLink to="/shop" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">🛒</span>
@@ -242,11 +262,14 @@ function Navbar() {
               <span>Farmer Dashboard</span>
             </NavLink>
           )}
-          <NavLink to="/admin" className={mobileClass} onClick={closeMenu}>
-            <span className="mobile-icon">🛡️</span>
-            <span>Admin Portal</span>
-            <span className="mobile-badge-new" style={{ background: "#fef3c7", color: "#92400e" }}>Admin</span>
-          </NavLink>
+          {/* ONLY visible to authenticated Admins */}
+          {hasAdminRole && (
+            <NavLink to="/admin" className={mobileClass} onClick={closeMenu}>
+              <span className="mobile-icon">🛡️</span>
+              <span>Admin Portal</span>
+              <span className="mobile-badge-new" style={{ background: "#fef3c7", color: "#92400e" }}>Admin</span>
+            </NavLink>
+          )}
         </nav>
 
         <div className="mobile-drawer-footer">
@@ -257,7 +280,14 @@ function Navbar() {
                   {(user.name || user.email || "U").charAt(0).toUpperCase()}
                 </span>
                 <div>
-                  <p className="mobile-user-name">{user.name || "Farmer"}</p>
+                  <p className="mobile-user-name">
+                    {user.name || (hasAdminRole ? "Admin" : "Farmer")}
+                    {hasAdminRole && (
+                      <span style={{ marginLeft: "8px", fontSize: "10px", background: "#f59e0b", color: "#ffffff", padding: "2px 6px", borderRadius: "6px", fontWeight: "800" }}>
+                        ADMIN
+                      </span>
+                    )}
+                  </p>
                   <p className="mobile-user-email">{user.email}</p>
                 </div>
               </div>

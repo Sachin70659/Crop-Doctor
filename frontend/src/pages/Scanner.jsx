@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api";
+import { useAuth } from "../context/AuthContext";
 
 const CROP_OPTIONS = [
   { value: "auto", label: "🔍 Auto-Detect Crop with AI (Recommended)" },
@@ -42,7 +43,12 @@ function Scanner() {
   const streamRef = useRef(null);
   const nativeCameraInputRef = useRef(null);
 
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const { user: authUser, token: contextToken } = useAuth();
+  const [token, setToken] = useState(() => contextToken || localStorage.getItem("token"));
+
+  useEffect(() => {
+    if (contextToken) setToken(contextToken);
+  }, [contextToken]);
 
   useEffect(() => {
     const handleAuth = () => {
@@ -214,7 +220,8 @@ function Scanner() {
   };
 
   const handleAnalyze = async () => {
-    if (!token) {
+    const activeToken = contextToken || token || localStorage.getItem("token");
+    if (!activeToken) {
       setError("Please log in first to diagnose crops and save scan records to your dashboard.");
       return;
     }

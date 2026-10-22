@@ -166,6 +166,59 @@ function Dashboard() {
         <span style={{ margin: "0" }}>Real-time overview of your field scans, pathological detections, and agronomist consultations.</span>
       </div>
 
+      {/* Admin Privilege Banner if user has admin role */}
+      {currentUser?.role === "admin" && (
+        <div
+          style={{
+            background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+            border: "1px solid #fde68a",
+            borderRadius: "16px",
+            padding: "20px 24px",
+            marginBottom: "30px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "16px",
+            boxShadow: "0 4px 16px rgba(217, 119, 6, 0.08)"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div style={{ fontSize: "32px" }}>🛡️</div>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <strong style={{ fontSize: "16px", color: "#92400e" }}>Administrator Account</strong>
+                <span style={{ fontSize: "11px", background: "#f59e0b", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontWeight: "800" }}>
+                  ADMIN ROLE
+                </span>
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: "13.5px", color: "#78350f" }}>
+                You have system administrator access to manage users, crop catalog, farm scans, and consultations.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/admin"
+            style={{
+              background: "#b45309",
+              color: "#ffffff",
+              padding: "10px 20px",
+              borderRadius: "10px",
+              fontWeight: "700",
+              fontSize: "13.5px",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "0 2px 8px rgba(180, 83, 9, 0.25)"
+            }}
+          >
+            <span>Open Admin Portal</span>
+            <span>→</span>
+          </Link>
+        </div>
+      )}
+
       {dataLoading && (
         <div style={{ textAlign: "center", padding: "40px", background: "#ffffff", borderRadius: "14px", border: "1px solid #e2ede5" }}>
           <p style={{ fontWeight: "600", color: "#15803d" }}>Loading your latest farm diagnostics...</p>
