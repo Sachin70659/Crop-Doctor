@@ -123,6 +123,10 @@ function Navbar() {
                 Dashboard
               </NavLink>
             )}
+            <NavLink to="/admin" className={navClass}>
+              <span style={{ fontSize: "10px", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "6px", fontWeight: "800", marginRight: "4px" }}>Admin</span>
+              Portal
+            </NavLink>
           </nav>
 
           {/* User Actions */}
@@ -238,6 +242,11 @@ function Navbar() {
               <span>Farmer Dashboard</span>
             </NavLink>
           )}
+          <NavLink to="/admin" className={mobileClass} onClick={closeMenu}>
+            <span className="mobile-icon">🛡️</span>
+            <span>Admin Portal</span>
+            <span className="mobile-badge-new" style={{ background: "#fef3c7", color: "#92400e" }}>Admin</span>
+          </NavLink>
         </nav>
 
         <div className="mobile-drawer-footer">

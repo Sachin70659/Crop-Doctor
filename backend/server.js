@@ -190,6 +190,7 @@ const userSchema = new mongoose.Schema({
     trim: true
   },
   password: { type: String, required: true },
+  role: { type: String, default: "farmer" },
   firebaseUid: { type: String, default: null }
 }, { timestamps: true });
 
@@ -217,6 +218,7 @@ const scanSchema = new mongoose.Schema({
     enum: ["completed", "needs_review"],
     default: "needs_review"
   },
+  imageUrl: { type: String, default: "" },
   symptoms: [String],
   precautions: [String],
   treatment: [String],
@@ -235,7 +237,8 @@ const expertSchema = new mongoose.Schema({
   name: { type: String, required: true },
   crop: { type: String, required: true },
   problem: { type: String, required: true },
-  status: { type: String, default: "pending" }
+  status: { type: String, default: "pending" },
+  reply: { type: String, default: "" }
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
@@ -964,6 +967,11 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
     const analysisByLabel = providerLabels[usedProvider] || usedProvider;
 
     // ── Persist to MongoDB ───────────────────────────────────────
+    let imageUrl = "";
+    if (imageBuffer && imageBuffer.length < 2.5 * 1024 * 1024) {
+      imageUrl = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
+    }
+
     const savedScan = await Scan.create({
       user: req.user._id,
       crop: llmResult.crop || "Unknown",
@@ -971,6 +979,7 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
       confidence,
       severity: llmResult.severity || "Moderate",
       status: isConfident ? "completed" : "needs_review",
+      imageUrl,
       symptoms: llmResult.observed_symptoms || [],
       precautions: llmResult.immediate_precautions || [],
       treatment: llmResult.treatment || [],
@@ -988,6 +997,7 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
       severity: savedScan.severity,
       confidence,
       status: savedScan.status,
+      imageUrl: savedScan.imageUrl,
       isConfident,
       symptoms: savedScan.symptoms,
       precautions: savedScan.precautions,
@@ -1089,6 +1099,227 @@ app.get("/api/dashboard", auth, async (req, res) => {
   } catch (error) {
     console.error("Dashboard error:", error.message);
     res.status(500).json({ error: "Could not load dashboard." });
+  }
+});
+
+// =========================================================
+// ADMIN PORTAL ENDPOINTS — Farm Management & Diagnostics
+// =========================================================
+
+// 1. Overall System Stats & Metrics
+app.get("/api/admin/stats", auth, async (req, res) => {
+  try {
+    const [totalUsers, totalScans, totalConsultations, totalCrops] = await Promise.all([
+      User.countDocuments(),
+      Scan.countDocuments(),
+      ExpertRequest.countDocuments(),
+      Crop.countDocuments()
+    ]);
+
+    const recentScans = await Scan.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .limit(8)
+      .lean();
+
+    const recentConsultations = await ExpertRequest.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .lean();
+
+    const cropStats = await Scan.aggregate([
+      { $group: { _id: "$crop", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 8 }
+    ]);
+
+    const diseaseStats = await Scan.aggregate([
+      { $group: { _id: "$disease", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 8 }
+    ]);
+
+    res.json({
+      totalUsers,
+      totalScans,
+      totalConsultations,
+      totalCrops,
+      recentScans,
+      recentConsultations,
+      cropStats,
+      diseaseStats
+    });
+  } catch (error) {
+    console.error("Admin stats error:", error.message);
+    res.status(500).json({ error: "Could not fetch admin statistics." });
+  }
+});
+
+// 2. Manage Registered Farmers & Users
+app.get("/api/admin/users", auth, async (req, res) => {
+  try {
+    const users = await User.find().select("-password").sort({ createdAt: -1 }).lean();
+    const usersWithStats = await Promise.all(
+      users.map(async (u) => {
+        const [scansCount, queriesCount] = await Promise.all([
+          Scan.countDocuments({ user: u._id }),
+          ExpertRequest.countDocuments({ user: u._id })
+        ]);
+        return {
+          ...u,
+          scansCount,
+          queriesCount
+        };
+      })
+    );
+    res.json({ users: usersWithStats });
+  } catch (error) {
+    console.error("Admin users fetch error:", error.message);
+    res.status(500).json({ error: "Could not fetch users list." });
+  }
+});
+
+app.delete("/api/admin/users/:id", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Promise.all([
+      User.findByIdAndDelete(id),
+      Scan.deleteMany({ user: id }),
+      ExpertRequest.deleteMany({ user: id })
+    ]);
+    res.json({ message: "Farmer account and all associated scan history removed." });
+  } catch (error) {
+    console.error("Admin delete user error:", error.message);
+    res.status(500).json({ error: "Could not delete user." });
+  }
+});
+
+// 3. Manage All Crop Scans
+app.get("/api/admin/scans", auth, async (req, res) => {
+  try {
+    const scans = await Scan.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+    res.json({ scans });
+  } catch (error) {
+    console.error("Admin scans error:", error.message);
+    res.status(500).json({ error: "Could not fetch scans records." });
+  }
+});
+
+app.delete("/api/admin/scans/:id", auth, async (req, res) => {
+  try {
+    await Scan.findByIdAndDelete(req.params.id);
+    res.json({ message: "Scan record deleted successfully." });
+  } catch (error) {
+    console.error("Admin delete scan error:", error.message);
+    res.status(500).json({ error: "Could not delete scan." });
+  }
+});
+
+// 4. Manage Farmer Expert Consultations
+app.get("/api/admin/consultations", auth, async (req, res) => {
+  try {
+    const consultations = await ExpertRequest.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+    res.json({ consultations });
+  } catch (error) {
+    console.error("Admin consultations error:", error.message);
+    res.status(500).json({ error: "Could not fetch consultations." });
+  }
+});
+
+app.patch("/api/admin/consultations/:id", auth, async (req, res) => {
+  try {
+    const { status, reply } = req.body;
+    const update = {};
+    if (status) update.status = status;
+    if (reply !== undefined) update.reply = reply;
+
+    const updated = await ExpertRequest.findByIdAndUpdate(
+      req.params.id,
+      { $set: update },
+      { new: true }
+    ).populate("user", "name email");
+
+    res.json({ message: "Consultation updated successfully.", consultation: updated });
+  } catch (error) {
+    console.error("Admin update consultation error:", error.message);
+    res.status(500).json({ error: "Could not update consultation." });
+  }
+});
+
+app.delete("/api/admin/consultations/:id", auth, async (req, res) => {
+  try {
+    await ExpertRequest.findByIdAndDelete(req.params.id);
+    res.json({ message: "Consultation query deleted successfully." });
+  } catch (error) {
+    console.error("Admin delete consultation error:", error.message);
+    res.status(500).json({ error: "Could not delete consultation." });
+  }
+});
+
+// 5. Manage Crop Catalog
+app.get("/api/admin/crops", auth, async (req, res) => {
+  try {
+    const crops = await Crop.find().sort({ name: 1 }).lean();
+    res.json({ crops });
+  } catch (error) {
+    console.error("Admin crops fetch error:", error.message);
+    res.status(500).json({ error: "Could not fetch crops." });
+  }
+});
+
+app.post("/api/admin/crops", auth, async (req, res) => {
+  try {
+    const { name, season, icon, description, soil, duration } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: "Crop name is required." });
+    }
+
+    const newCrop = await Crop.create({
+      name: name.trim(),
+      season: season?.trim() || "Kharif & Rabi",
+      icon: icon?.trim() || "🌱",
+      description: description?.trim() || "Standard agricultural crop profile.",
+      soil: soil?.trim() || "Well-drained fertile loam",
+      duration: duration?.trim() || "90-120 days"
+    });
+
+    res.status(201).json({ message: "New crop added to catalog.", crop: newCrop });
+  } catch (error) {
+    console.error("Admin create crop error:", error.message);
+    res.status(500).json({ error: error.code === 11000 ? "A crop with this name already exists." : "Could not add crop." });
+  }
+});
+
+app.put("/api/admin/crops/:id", auth, async (req, res) => {
+  try {
+    const updated = await Crop.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+    res.json({ message: "Crop profile updated.", crop: updated });
+  } catch (error) {
+    console.error("Admin update crop error:", error.message);
+    res.status(500).json({ error: "Could not update crop." });
+  }
+});
+
+app.delete("/api/admin/crops/:id", auth, async (req, res) => {
+  try {
+    await Crop.findByIdAndDelete(req.params.id);
+    res.json({ message: "Crop deleted from catalog." });
+  } catch (error) {
+    console.error("Admin delete crop error:", error.message);
+    res.status(500).json({ error: "Could not delete crop." });
   }
 });
 

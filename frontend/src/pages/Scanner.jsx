@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api";
 
@@ -32,6 +32,16 @@ function Scanner() {
   const [error, setError] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
 
+  // Live Camera States
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState("environment"); // "environment" (rear) or "user" (front)
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const nativeCameraInputRef = useRef(null);
+
   const [token, setToken] = useState(() => localStorage.getItem("token"));
 
   useEffect(() => {
@@ -50,6 +60,9 @@ function Scanner() {
     return () => {
       if (preview) {
         URL.revokeObjectURL(preview);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
   }, [preview]);
@@ -94,6 +107,110 @@ function Scanner() {
 
   const handleDragLeave = () => {
     setIsDragOver(false);
+  };
+
+  // ── Camera Control Functions ──────────────────────────────────
+  const startCamera = async (facing = cameraFacing) => {
+    setCameraError("");
+    setCameraLoading(true);
+    setIsCameraActive(true);
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Direct camera is not supported in this browser.");
+      }
+
+      const constraints = {
+        video: {
+          facingMode: { ideal: facing },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
+        audio: false
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCameraLoading(false);
+    } catch (err) {
+      console.warn("Direct webcam failed, falling back to native camera:", err.message);
+      setCameraLoading(false);
+      // If user denied camera permission or browser doesn't allow webcam, trigger native device camera
+      if (nativeCameraInputRef.current) {
+        nativeCameraInputRef.current.click();
+        setIsCameraActive(false);
+      } else {
+        setCameraError(err.message || "Could not access device camera.");
+      }
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraActive(false);
+    setCameraLoading(false);
+    setCameraError("");
+  };
+
+  const toggleFacing = () => {
+    const nextFacing = cameraFacing === "environment" ? "user" : "environment";
+    setCameraFacing(nextFacing);
+    startCamera(nextFacing);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+
+    try {
+      const video = videoRef.current;
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return;
+          const file = new File([blob], `crop-leaf-${Date.now()}.jpg`, {
+            type: "image/jpeg",
+            lastModified: Date.now()
+          });
+          processFile(file);
+          stopCamera();
+        },
+        "image/jpeg",
+        0.92
+      );
+    } catch (err) {
+      console.error("Failed to capture snapshot:", err);
+      setError("Failed to capture snapshot from camera.");
+      stopCamera();
+    }
+  };
+
+  const clearSelection = () => {
+    if (preview) URL.revokeObjectURL(preview);
+    setImage(null);
+    setPreview(null);
+    setResult(null);
+    setError("");
   };
 
   const handleAnalyze = async () => {
@@ -142,7 +259,7 @@ function Scanner() {
         <p>AI VISION CROP DIAGNOSIS</p>
         <h1>Crop Disease Scanner</h1>
         <span>
-          Upload a clear photo of an affected plant leaf to detect exact plant species, diagnose diseases, and view certified agronomic cure protocols.
+          Click a live photo or upload a picture of an affected plant leaf to detect exact plant species, diagnose diseases, and view certified agronomic cure protocols.
         </span>
       </div>
 
@@ -231,30 +348,76 @@ function Scanner() {
           {!preview ? (
             <>
               <div className="upload-icon">📷</div>
-              <h2>Upload Crop Leaf Image</h2>
-              <p>Drag & drop or click to choose (JPG, PNG, WebP up to 10 MB)</p>
+              <h2>Scan Your Crop Leaf</h2>
+              <p>Choose an option below to click a live photo or upload an existing image</p>
 
-              <label className="upload-btn">
-                Choose Image File
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleImage}
-                  hidden
-                />
-              </label>
+              {/* DUAL ACTION BUTTONS: DIRECT CAMERA SNAP & GALLERY PICK */}
+              <div className="crop-photo-action-buttons">
+                <button
+                  type="button"
+                  className="crop-direct-camera-btn"
+                  onClick={() => startCamera("environment")}
+                  title="Open camera to click crop leaf photo directly"
+                >
+                  <span className="btn-snap-icon">📸</span>
+                  <div className="btn-snap-text">
+                    <span className="primary-label">Click Photo with Camera</span>
+                    <span className="secondary-label">सीधे कैमरा से फ़ोटो खींचें</span>
+                  </div>
+                </button>
+
+                <label className="crop-gallery-pick-btn" title="Choose from gallery or files">
+                  <span className="btn-snap-icon">📁</span>
+                  <div className="btn-snap-text">
+                    <span className="primary-label">Upload from Files</span>
+                    <span className="secondary-label">गैलरी या स्टोरेज से चुनें</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImage}
+                    hidden
+                  />
+                </label>
+              </div>
+
+              {/* Native Mobile Camera Input Fallback */}
+              <input
+                ref={nativeCameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImage}
+                hidden
+              />
+
+              <div className="upload-leaf-guideline">
+                <span>💡 <strong>Tip for Farmers:</strong> Hold camera 10–15 cm from the affected leaf under natural daylight for best accuracy.</span>
+              </div>
             </>
           ) : (
             <>
-              <img
-                src={preview}
-                alt="Crop leaf preview"
-                className="crop-preview"
-              />
+              <div className="preview-image-wrapper">
+                <img
+                  src={preview}
+                  alt="Crop leaf preview"
+                  className="crop-preview"
+                />
+                <div className="preview-image-badge">✅ Leaf Photo Ready</div>
+              </div>
 
               <div className="upload-preview-actions">
-                <label className="change-btn">
-                  🔄 Change Image
+                <button
+                  type="button"
+                  className="camera-reclick-btn"
+                  onClick={() => startCamera("environment")}
+                  title="Take another live camera shot"
+                >
+                  📸 Re-click Photo
+                </button>
+
+                <label className="change-btn" title="Choose a different image file">
+                  📁 Pick File
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -266,13 +429,8 @@ function Scanner() {
                 <button
                   type="button"
                   className="remove-btn"
-                  onClick={() => {
-                    if (preview) URL.revokeObjectURL(preview);
-                    setImage(null);
-                    setPreview(null);
-                    setResult(null);
-                    setError("");
-                  }}
+                  onClick={clearSelection}
+                  title="Remove image"
                 >
                   ✕ Clear
                 </button>
@@ -300,7 +458,7 @@ function Scanner() {
               <span style={{ fontSize: "50px", display: "block", marginBottom: "14px" }}>🌿</span>
               <p><strong>Your crop diagnosis will appear here.</strong></p>
               <p style={{ fontSize: "13px", marginTop: "8px", color: "#64748b" }}>
-                Select an image on the left and click "Analyze Crop Leaf" below.
+                Click a photo or select an image on the left, then tap &quot;Analyze Crop Leaf Now&quot;.
               </p>
             </div>
           )}
@@ -409,6 +567,104 @@ function Scanner() {
           {loading ? "Analyzing Leaf with AI..." : "🔬 Analyze Crop Leaf Now"}
         </button>
       </div>
+
+      {/* ── LIVE CAMERA VIEWFINDER MODAL ───────────────────────── */}
+      {isCameraActive && (
+        <div className="camera-modal-backdrop">
+          <div className="camera-modal-card">
+            <div className="camera-modal-header">
+              <div className="camera-modal-title">
+                <span className="rec-dot"></span>
+                <span>Live Crop Camera</span>
+              </div>
+              <div className="camera-header-actions">
+                <button
+                  type="button"
+                  className="camera-flip-btn"
+                  onClick={toggleFacing}
+                  title="Switch Front/Rear Camera"
+                >
+                  🔄 Flip
+                </button>
+                <button
+                  type="button"
+                  className="camera-close-btn"
+                  onClick={stopCamera}
+                  title="Close Camera"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="camera-viewfinder-container">
+              {cameraLoading && (
+                <div className="camera-loading-overlay">
+                  <span>⏳ Starting camera feed...</span>
+                </div>
+              )}
+
+              {cameraError && (
+                <div className="camera-error-overlay">
+                  <p>⚠️ {cameraError}</p>
+                  <button
+                    type="button"
+                    className="camera-retry-btn"
+                    onClick={() => nativeCameraInputRef.current?.click()}
+                  >
+                    Open Device Camera Directly
+                  </button>
+                </div>
+              )}
+
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                className="camera-video-stream"
+              />
+
+              {/* Viewfinder Target Guide */}
+              <div className="camera-target-reticle">
+                <div className="reticle-corner top-left"></div>
+                <div className="reticle-corner top-right"></div>
+                <div className="reticle-corner bottom-left"></div>
+                <div className="reticle-corner bottom-right"></div>
+                <span className="reticle-label">🌱 Align Affected Leaf Here</span>
+              </div>
+            </div>
+
+            <div className="camera-modal-controls">
+              <button
+                type="button"
+                className="camera-cancel-text-btn"
+                onClick={stopCamera}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="camera-shutter-btn"
+                onClick={capturePhoto}
+                disabled={cameraLoading}
+                title="Click Photo"
+              >
+                <div className="shutter-inner-circle"></div>
+              </button>
+
+              <button
+                type="button"
+                className="camera-switch-mobile-btn"
+                onClick={toggleFacing}
+                title="Switch Camera"
+              >
+                🔄
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

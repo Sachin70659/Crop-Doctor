@@ -1,4 +1,3 @@
-
 import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -13,6 +12,7 @@ import Expert from "./pages/Expert";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Shop from "./pages/Shop";
+import Admin from "./pages/Admin";
 
 function App() {
   return (
@@ -29,9 +29,8 @@ function App() {
           <Route path="/expert" element={<Expert />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
-
-          {/* New Shop Page */}
           <Route path="/shop" element={<Shop />} />
+          <Route path="/admin" element={<Admin />} />
 
           {/* 404 Page */}
           <Route
