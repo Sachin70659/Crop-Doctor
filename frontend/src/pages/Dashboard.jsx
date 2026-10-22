@@ -1,21 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api";
+import { useAuth } from "../context/AuthContext";
 
 function getCropIcon(cropName = "") {
-  const name = cropName.toLowerCase();
+  const name = (cropName || "").toLowerCase();
+  if (name.includes("mango") || name.includes("aam")) return "🥭";
   if (name.includes("tomato")) return "🍅";
-  if (name.includes("rice")) return "🌾";
+  if (name.includes("rice") || name.includes("paddy")) return "🌾";
   if (name.includes("wheat")) return "🌾";
   if (name.includes("potato")) return "🥔";
   if (name.includes("corn") || name.includes("maize")) return "🌽";
   if (name.includes("mustard")) return "🌼";
+  if (name.includes("chilli")) return "🌶️";
+  if (name.includes("cotton")) return "🪴";
+  if (name.includes("banana")) return "🍌";
   return "🌱";
 }
 
 function Dashboard() {
-  const [authToken, setAuthToken] = useState(() => localStorage.getItem("token"));
+  const { user: authUser, token: contextToken, loading: authLoading } = useAuth();
+
+  const [authToken, setAuthToken] = useState(() => contextToken || localStorage.getItem("token"));
   const [currentUser, setCurrentUser] = useState(() => {
+    if (authUser) return authUser;
     try {
       const u = localStorage.getItem("user");
       return u ? JSON.parse(u) : null;
@@ -25,9 +33,10 @@ function Dashboard() {
   });
 
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem("token")));
+  const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Sync state if context changes or storage events fire
   useEffect(() => {
     const handleAuthChange = () => {
       const t = localStorage.getItem("token");
@@ -50,11 +59,25 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!authToken) {
+    if (contextToken) {
+      setAuthToken(contextToken);
+    }
+    if (authUser) {
+      setCurrentUser(authUser);
+    }
+  }, [contextToken, authUser]);
+
+  // Load Dashboard Data
+  useEffect(() => {
+    const activeToken = authToken || contextToken || localStorage.getItem("token");
+    if (!activeToken) {
+      setDataLoading(false);
       return;
     }
 
     let isMounted = true;
+    setDataLoading(true);
+
     async function loadDashboard() {
       try {
         setError("");
@@ -68,7 +91,7 @@ function Dashboard() {
         }
       } finally {
         if (isMounted) {
-          setLoading(false);
+          setDataLoading(false);
         }
       }
     }
@@ -78,25 +101,48 @@ function Dashboard() {
     return () => {
       isMounted = false;
     };
-  }, [authToken]);
+  }, [authToken, contextToken]);
 
-  if (!authToken) {
+  const activeToken = authToken || contextToken || localStorage.getItem("token");
+
+  // While Firebase is authenticating initial session
+  if (authLoading && !activeToken) {
+    return (
+      <section className="dashboard" style={{ textAlign: "center", padding: "80px 20px" }}>
+        <div style={{ fontSize: "40px", marginBottom: "16px" }}>⏳</div>
+        <h2>Loading your farm portal...</h2>
+        <p style={{ color: "#64748b", marginTop: "8px" }}>Verifying credentials, please wait a moment.</p>
+      </section>
+    );
+  }
+
+  // If user is truly not logged in
+  if (!activeToken) {
     return (
       <section className="dashboard">
-        <div className="dashboard-header">
+        <div className="page-heading">
           <p>FARMER DASHBOARD</p>
           <h1>Access Your Farm Portal 👨‍🌾</h1>
+          <span>Log in with your farmer account to view your AI crop scan history, disease diagnostics, and expert advice.</span>
         </div>
 
-        <div className="dashboard-auth-notice">
-          <div className="dashboard-notice-icon">🔐</div>
-          <h2>Please Log In</h2>
-          <p>
-            Log in to view your scan history, disease diagnosis statistics, and
-            expert consultations.
+        <div className="dashboard-auth-notice" style={{
+          maxWidth: "500px",
+          margin: "0 auto",
+          background: "#ffffff",
+          borderRadius: "18px",
+          border: "1px solid #bbf7d0",
+          padding: "40px 30px",
+          textAlign: "center",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.04)"
+        }}>
+          <div style={{ fontSize: "50px", marginBottom: "14px" }}>🔐</div>
+          <h2 style={{ color: "#0f2e1b", marginBottom: "8px" }}>Farmer Authentication Required</h2>
+          <p style={{ color: "#475569", lineHeight: "1.6", marginBottom: "24px" }}>
+            This portal is for registered farmers and users to monitor plant health analytics. Sign in or create a free account to continue.
           </p>
-          <Link to="/login" className="primary-btn" style={{ marginTop: "15px" }}>
-            Go to Login
+          <Link to="/login" className="btn-primary-hero" style={{ display: "inline-flex" }}>
+            Sign In to Farm Account →
           </Link>
         </div>
       </section>
@@ -113,117 +159,136 @@ function Dashboard() {
   const recentScans = data?.recentScans || [];
 
   return (
-    <section className="dashboard">
-      <div className="dashboard-header">
-        <p>FARMER DASHBOARD</p>
-        <h1>Welcome, {currentUser?.name || "Farmer"} 👨‍🌾</h1>
+    <section className="dashboard" style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 24px 80px" }}>
+      <div className="page-heading" style={{ textAlign: "left", marginBottom: "35px" }}>
+        <p>PERSONAL FARMING ANALYTICS</p>
+        <h1 style={{ fontSize: "32px", fontWeight: "800" }}>Welcome, {currentUser?.name || "Farmer"} 👨‍🌾</h1>
+        <span style={{ margin: "0" }}>Real-time overview of your field scans, pathological detections, and agronomist consultations.</span>
       </div>
 
-      {loading && (
-        <div className="dashboard-loading">
-          <p>Loading your farm statistics and scan history...</p>
+      {dataLoading && (
+        <div style={{ textAlign: "center", padding: "40px", background: "#ffffff", borderRadius: "14px", border: "1px solid #e2ede5" }}>
+          <p style={{ fontWeight: "600", color: "#15803d" }}>Loading your latest farm diagnostics...</p>
         </div>
       )}
 
-      {error && (
-        <div className="dashboard-error">
-          <p>{error}</p>
+      {error && !dataLoading && (
+        <div className="error-banner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>⚠️ {error}</span>
           <button
             type="button"
-            className="secondary-btn"
             onClick={() => window.location.reload()}
+            style={{ fontWeight: "700", textDecoration: "underline", color: "inherit", cursor: "pointer" }}
           >
             Retry
           </button>
         </div>
       )}
 
-      {!loading && !error && (
+      {!dataLoading && (
         <>
-          <div className="dashboard-grid">
-            <div className="dashboard-card">
-              <span>📷</span>
-              <h3>Total Scans</h3>
-              <strong>{stats.totalScans}</strong>
+          {/* Metrics Row */}
+          <div className="dashboard-metrics-row">
+            <div className="metric-stat-box">
+              <span style={{ fontSize: "24px", display: "block", marginBottom: "8px" }}>📷</span>
+              <p className="metric-stat-title">Total Leaf Scans</p>
+              <h3 className="metric-stat-count">{stats.totalScans}</h3>
             </div>
 
-            <div className="dashboard-card">
-              <span>✅</span>
-              <h3>Completed</h3>
-              <strong>{stats.completedScans}</strong>
+            <div className="metric-stat-box">
+              <span style={{ fontSize: "24px", display: "block", marginBottom: "8px" }}>✅</span>
+              <p className="metric-stat-title">Verified Diagnoses</p>
+              <h3 className="metric-stat-count" style={{ color: "#15803d" }}>{stats.completedScans}</h3>
             </div>
 
-            <div className="dashboard-card">
-              <span>🔍</span>
-              <h3>Needs Review</h3>
-              <strong>{stats.pendingScans}</strong>
+            <div className="metric-stat-box">
+              <span style={{ fontSize: "24px", display: "block", marginBottom: "8px" }}>🔍</span>
+              <p className="metric-stat-title">Needs Review</p>
+              <h3 className="metric-stat-count" style={{ color: "#d97706" }}>{stats.pendingScans}</h3>
             </div>
 
-            <div className="dashboard-card">
-              <span>👨‍🔬</span>
-              <h3>Expert Inquiries</h3>
-              <strong>{stats.expertRequests}</strong>
+            <div className="metric-stat-box">
+              <span style={{ fontSize: "24px", display: "block", marginBottom: "8px" }}>👨‍🔬</span>
+              <p className="metric-stat-title">Agronomist Consults</p>
+              <h3 className="metric-stat-count" style={{ color: "#0284c7" }}>{stats.expertRequests}</h3>
             </div>
           </div>
 
-          <div className="recent-scans">
-            <div className="recent-scans-header">
-              <h2>Recent Crop Scans</h2>
-              <Link to="/scanner" className="new-scan-link">
-                + New Scan
-              </Link>
+          {/* Quick Actions Row */}
+          <div style={{ display: "flex", gap: "14px", marginBottom: "35px", flexWrap: "wrap" }}>
+            <Link to="/scanner" className="btn-primary-hero" style={{ padding: "12px 24px", fontSize: "14px" }}>
+              📷 New AI Crop Scan
+            </Link>
+            <Link to="/expert" className="btn-secondary-hero" style={{ padding: "12px 24px", fontSize: "14px" }}>
+              👨‍🌾 Ask Farm Expert
+            </Link>
+            <Link to="/weather" className="btn-secondary-hero" style={{ padding: "12px 24px", fontSize: "14px" }}>
+              🌦️ Check Farm Weather
+            </Link>
+          </div>
+
+          {/* Recent Scans Table */}
+          <div className="scans-table-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#0f2e1b" }}>Recent Crop Leaf Diagnostics</h2>
+              <span style={{ fontSize: "13px", color: "#64748b" }}>Showing last {recentScans.length} records</span>
             </div>
 
             {recentScans.length === 0 ? (
-              <div className="empty-scans">
-                <p>No crop scans found in your account yet.</p>
-                <Link to="/scanner" className="primary-btn" style={{ marginTop: "10px" }}>
-                  📷 Run First Crop Diagnosis
+              <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                <span style={{ fontSize: "40px", display: "block", marginBottom: "10px" }}>🌿</span>
+                <h3 style={{ fontSize: "16px", color: "#1e293b", marginBottom: "6px" }}>No crop scans recorded yet</h3>
+                <p style={{ color: "#64748b", fontSize: "13.5px", marginBottom: "16px" }}>
+                  Take a photo of any diseased or healthy plant leaf to see full pathological breakdown.
+                </p>
+                <Link to="/scanner" className="btn-primary-hero" style={{ display: "inline-flex", padding: "10px 20px", fontSize: "13.5px" }}>
+                  Start First Scan →
                 </Link>
               </div>
             ) : (
-              recentScans.map((scan) => (
-                <div className="scan-row" key={scan._id}>
-                  <span>{getCropIcon(scan.crop)}</span>
-                  <div>
-                    <strong>{scan.crop}</strong>
-                    <p>{scan.disease}</p>
-                    <small style={{ color: "#8a968e" }}>
-                      {scan.createdAt
-                        ? new Date(scan.createdAt).toLocaleDateString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })
-                        : "Recent"}
-                    </small>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <span
-                      style={{
-                        fontWeight: "bold",
-                        color: scan.confidence >= 60 ? "#218c46" : "#e67e22",
-                      }}
-                    >
-                      {scan.confidence}%
-                    </span>
-                    <br />
-                    <small
-                      style={{
-                        padding: "2px 8px",
-                        borderRadius: "12px",
-                        fontSize: "11px",
-                        backgroundColor:
-                          scan.status === "completed" ? "#eaf6ea" : "#fef4e8",
-                        color:
-                          scan.status === "completed" ? "#218c46" : "#d35400",
-                      }}
-                    >
-                      {scan.status === "completed" ? "Completed" : "Review"}
-                    </small>
-                  </div>
-                </div>
-              ))
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #e2ede5", color: "#64748b", fontSize: "12px", textTransform: "uppercase" }}>
+                      <th style={{ padding: "12px 14px" }}>Crop</th>
+                      <th style={{ padding: "12px 14px" }}>Diagnosis</th>
+                      <th style={{ padding: "12px 14px" }}>Severity</th>
+                      <th style={{ padding: "12px 14px" }}>Confidence</th>
+                      <th style={{ padding: "12px 14px" }}>Engine</th>
+                      <th style={{ padding: "12px 14px" }}>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentScans.map((scan) => (
+                      <tr key={scan._id} style={{ borderBottom: "1px solid #f1f5f2" }}>
+                        <td style={{ padding: "14px", fontWeight: "700", color: "#0f2e1b" }}>
+                          <span style={{ marginRight: "8px", fontSize: "16px" }}>{getCropIcon(scan.crop)}</span>
+                          {scan.crop}
+                        </td>
+                        <td style={{ padding: "14px", color: "#1e293b", fontWeight: "600" }}>
+                          {scan.disease}
+                        </td>
+                        <td style={{ padding: "14px" }}>
+                          <span className={`severity-badge severity-${(scan.severity || "moderate").toLowerCase()}`}>
+                            {scan.severity || "Moderate"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "14px" }}>
+                          <span className={`confidence-badge ${(scan.confidence || 0) >= 60 ? "high" : "low"}`}>
+                            {scan.confidence || 70}%
+                          </span>
+                        </td>
+                        <td style={{ padding: "14px", color: "#64748b", fontSize: "12px" }}>
+                          {scan.aiProvider || "AI Vision"}
+                        </td>
+                        <td style={{ padding: "14px", color: "#64748b", fontSize: "12px" }}>
+                          {new Date(scan.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </>

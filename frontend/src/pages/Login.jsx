@@ -6,6 +6,7 @@ import {
   firebaseGoogleSignIn
 } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import { API_URL } from "../api";
 
 function Login() {
   const navigate = useNavigate();
@@ -19,28 +20,69 @@ function Login() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // ── Email / Password submit ────────────────────────────────────
+  // ── Email / Password submit (Hybrid: Firebase with MongoDB fallback) ──
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
     setSuccess("");
     setLoading(true);
 
-    try {
-      let fbUser;
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password;
+    const cleanName = name.trim();
 
-      if (isRegister) {
-        fbUser = await firebaseRegister(name.trim(), email.trim(), password);
-      } else {
-        fbUser = await firebaseLogin(email.trim(), password);
+    try {
+      let fbUser = null;
+      let firebaseWorked = false;
+
+      // 1. First attempt via Firebase Auth
+      try {
+        if (isRegister) {
+          fbUser = await firebaseRegister(cleanName, cleanEmail, cleanPassword);
+        } else {
+          fbUser = await firebaseLogin(cleanEmail, cleanPassword);
+        }
+        firebaseWorked = Boolean(fbUser);
+      } catch (fbErr) {
+        console.warn("[Auth] Firebase attempt info:", fbErr.code || fbErr.message);
       }
 
-      // Sync Firebase user with backend to get JWT + MongoDB user
-      await syncWithBackend(fbUser);
+      // 2. If Firebase succeeded, sync with backend & navigate
+      if (firebaseWorked && fbUser) {
+        await syncWithBackend(fbUser);
+        setSuccess(isRegister ? "Account created successfully!" : "Login successful!");
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+
+      // 3. Fallback: Directly authenticate against MongoDB backend
+      const endpoint = isRegister ? "/api/auth/register" : "/api/auth/login";
+      const body = isRegister
+        ? { name: cleanName, email: cleanEmail, password: cleanPassword }
+        : { email: cleanEmail, password: cleanPassword };
+
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || "Incorrect email or password. Please verify your credentials.");
+      }
+
+      // Save token and user in localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      window.dispatchEvent(new Event("auth-changed"));
 
       setSuccess(isRegister ? "Account created successfully!" : "Login successful!");
       navigate("/dashboard", { replace: true });
+
     } catch (err) {
+      console.error("[Auth] Login error:", err);
       setError(mapFirebaseError(err.code) || err.message || "Authentication failed.");
     } finally {
       setLoading(false);
@@ -81,8 +123,8 @@ function Login() {
           <h1>{isRegister ? "Create Farmer Account" : "Welcome Back"}</h1>
           <span>
             {isRegister
-              ? "Join Crop Doctor to scan crops and save field history."
-              : "Login to access your AI scans and expert consultations."}
+              ? "Join Crop Doctor to scan crops, view diagnostics, and track field history."
+              : "Login to access your personal AI scans, diagnostics, and expert inquiries."}
           </span>
         </div>
 
@@ -106,20 +148,20 @@ function Login() {
           disabled={loading}
           style={{
             width: "100%",
-            padding: "12px",
+            padding: "13px",
             marginBottom: "16px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
-            background: "#fff",
+            background: "#ffffff",
             border: "2px solid #e2e8f0",
-            borderRadius: "10px",
+            borderRadius: "12px",
             cursor: loading ? "not-allowed" : "pointer",
-            fontSize: "15px",
-            fontWeight: "600",
-            color: "#374151",
-            transition: "border-color 0.2s"
+            fontSize: "14.5px",
+            fontWeight: "700",
+            color: "#334155",
+            transition: "all 0.2s"
           }}
         >
           <svg width="20" height="20" viewBox="0 0 48 48">
@@ -131,7 +173,7 @@ function Login() {
           {loading ? "Please wait..." : `${isRegister ? "Sign up" : "Sign in"} with Google`}
         </button>
 
-        <div style={{ textAlign: "center", color: "#9ca3af", marginBottom: "16px", fontSize: "13px" }}>
+        <div style={{ textAlign: "center", color: "#94a3b8", marginBottom: "16px", fontSize: "13px", fontWeight: "600" }}>
           — or use email —
         </div>
 
@@ -170,11 +212,11 @@ function Login() {
             <input
               id="password"
               type="password"
-              placeholder={isRegister ? "At least 6 characters" : "Enter your account password"}
+              placeholder={isRegister ? "At least 8 characters" : "Enter your account password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={isRegister ? "new-password" : "current-password"}
-              minLength={isRegister ? 6 : undefined}
+              minLength={isRegister ? 8 : undefined}
               required
             />
           </div>
@@ -185,10 +227,10 @@ function Login() {
             disabled={loading}
           >
             {loading
-              ? "Please wait..."
+              ? "Authenticating..."
               : isRegister
-                ? "✨ Create Account"
-                : "🔐 Login to Account"}
+                ? "✨ Create Farmer Account"
+                : "🔐 Access Farm Dashboard"}
           </button>
         </form>
 
@@ -212,17 +254,17 @@ function Login() {
   );
 }
 
-// ── Map Firebase error codes to friendly messages ─────────────
+// ── Friendly error codes ─────────────
 function mapFirebaseError(code) {
   const map = {
     "auth/email-already-in-use": "This email is already registered. Try logging in instead.",
     "auth/invalid-email": "Please enter a valid email address.",
-    "auth/weak-password": "Password must be at least 6 characters.",
-    "auth/user-not-found": "No account found with this email.",
+    "auth/weak-password": "Password must be at least 8 characters.",
+    "auth/user-not-found": "No account found with this email. Please check your email or create an account.",
     "auth/wrong-password": "Incorrect password. Please try again.",
-    "auth/too-many-requests": "Too many failed attempts. Please try again later.",
+    "auth/too-many-requests": "Too many failed attempts. Please try again in a few minutes.",
     "auth/network-request-failed": "Network error. Please check your internet connection.",
-    "auth/popup-blocked": "Popup was blocked. Please allow popups for this site.",
+    "auth/popup-blocked": "Popup was blocked. Please allow popups for Google sign-in.",
     "auth/invalid-credential": "Incorrect email or password."
   };
   return map[code] || null;
