@@ -1,0 +1,12 @@
+# Root .gitignore - Prevents VS Code and Git from scanning 10k+ dependency files
+node_modules/
+dist/
+.env
+.env.*
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+.vscode/
+.idea/
