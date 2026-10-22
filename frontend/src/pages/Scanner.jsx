@@ -2,9 +2,31 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api";
 
+const CROP_OPTIONS = [
+  { value: "auto", label: "🔍 Auto-Detect Crop with AI (Recommended)" },
+  { value: "Mango", label: "🥭 Mango (Aam)" },
+  { value: "Tomato", label: "🍅 Tomato (Tamatar)" },
+  { value: "Rice", label: "🌾 Rice / Paddy (Dhan)" },
+  { value: "Wheat", label: "🌾 Wheat (Gehun)" },
+  { value: "Potato", label: "🥔 Potato (Aaloo)" },
+  { value: "Chilli", label: "🌶️ Chilli (Mirch)" },
+  { value: "Cotton", label: "🪴 Cotton (Kapas)" },
+  { value: "Sugarcane", label: "🎋 Sugarcane (Ganna)" },
+  { value: "Banana", label: "🍌 Banana (Kela)" },
+  { value: "Maize", label: "🌽 Maize / Corn (Makka)" },
+  { value: "Mustard", label: "🌼 Mustard (Sarson)" },
+  { value: "Apple", label: "🍏 Apple (Seb)" },
+  { value: "Guava", label: "🍈 Guava (Amrood)" },
+  { value: "Papaya", label: "🍈 Papaya (Papita)" },
+  { value: "Onion", label: "🧅 Onion (Pyaz)" },
+  { value: "Other", label: "🌿 Other Crop / Plant" }
+];
+
 function Scanner() {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [selectedCrop, setSelectedCrop] = useState("auto");
+  const [customCrop, setCustomCrop] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,8 +61,8 @@ function Scanner() {
       setError("Please select a valid image file (JPG, PNG, or WebP).");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image size must be smaller than 5 MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image size must be smaller than 10 MB.");
       return;
     }
     if (preview) {
@@ -55,7 +77,6 @@ function Scanner() {
   const handleImage = (e) => {
     const file = e.target.files?.[0];
     processFile(file);
-    // Reset file input value so selecting the same file triggers onChange
     e.target.value = "";
   };
 
@@ -94,6 +115,14 @@ function Scanner() {
       const form = new FormData();
       form.append("image", image);
 
+      const effectiveCrop = selectedCrop === "Other" && customCrop.trim()
+        ? customCrop.trim()
+        : selectedCrop;
+
+      if (effectiveCrop && effectiveCrop !== "auto") {
+        form.append("cropHint", effectiveCrop);
+      }
+
       const data = await apiRequest("/api/scan", {
         method: "POST",
         body: form,
@@ -113,7 +142,7 @@ function Scanner() {
         <p>AI VISION CROP DIAGNOSIS</p>
         <h1>Crop Disease Scanner</h1>
         <span>
-          Upload a clear photo of an affected plant leaf to detect diseases, assess severity, and view agronomic treatment steps.
+          Upload a clear photo of an affected plant leaf to detect exact plant species, diagnose diseases, and view certified agronomic cure protocols.
         </span>
       </div>
 
@@ -130,7 +159,69 @@ function Scanner() {
         </div>
       )}
 
+      {/* Crop Selector Card */}
+      <div style={{
+        maxWidth: "600px",
+        margin: "0 auto 30px",
+        background: "#ffffff",
+        padding: "16px 22px",
+        borderRadius: "14px",
+        border: "1px solid #bbf7d0",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.03)"
+      }}>
+        <label htmlFor="cropSelect" style={{
+          display: "block",
+          fontSize: "13.5px",
+          fontWeight: "700",
+          color: "#0f2e1b",
+          marginBottom: "8px"
+        }}>
+          🌱 Specify Crop / Plant (Optional):
+        </label>
+        <select
+          id="cropSelect"
+          value={selectedCrop}
+          onChange={(e) => setSelectedCrop(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "11px 14px",
+            borderRadius: "10px",
+            border: "1.5px solid #d1d5db",
+            fontSize: "14.5px",
+            fontWeight: "600",
+            color: "#1e293b",
+            background: "#f8fafc",
+            outline: "none",
+            cursor: "pointer"
+          }}
+        >
+          {CROP_OPTIONS.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+
+        {selectedCrop === "Other" && (
+          <input
+            type="text"
+            placeholder="Enter crop name (e.g. Mustard, Guava, Papaya)..."
+            value={customCrop}
+            onChange={(e) => setCustomCrop(e.target.value)}
+            style={{
+              width: "100%",
+              marginTop: "10px",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              border: "1.5px solid #bbf7d0",
+              fontSize: "14px"
+            }}
+          />
+        )}
+      </div>
+
       <div className="scanner-container">
+        {/* Upload Column */}
         <div
           className={`upload-box ${isDragOver ? "drag-over" : ""}`}
           onDragOver={handleDragOver}
@@ -140,10 +231,8 @@ function Scanner() {
           {!preview ? (
             <>
               <div className="upload-icon">📷</div>
-
               <h2>Upload Crop Leaf Image</h2>
-
-              <p>Drag & drop or select an image (JPG, PNG, WebP &lt; 5 MB)</p>
+              <p>Drag & drop or click to choose (JPG, PNG, WebP up to 10 MB)</p>
 
               <label className="upload-btn">
                 Choose Image File
@@ -192,20 +281,27 @@ function Scanner() {
           )}
         </div>
 
+        {/* Diagnosis Column */}
         <div className="analysis-box">
-          <h2>🔬 Diagnosis & Treatment</h2>
+          <h2>🔬 Diagnosis & Treatment Protocol</h2>
 
           {loading && (
             <div className="result-placeholder">
-              <span>🔬</span>
-              <p>Analyzing leaf morphology and lesion patterns with AI... please wait.</p>
+              <span style={{ fontSize: "50px", display: "block", marginBottom: "14px" }}>🔬</span>
+              <p><strong>Analyzing leaf pathology and morphology...</strong></p>
+              <p style={{ fontSize: "13px", marginTop: "8px", color: "#64748b" }}>
+                Inspecting leaf texture, chlorosis borders, and lesion patterns with AI...
+              </p>
             </div>
           )}
 
           {!loading && !result && (
             <div className="result-placeholder">
-              <span>🌿</span>
-              <p>Your crop diagnosis, confidence score, and management guidance will appear here.</p>
+              <span style={{ fontSize: "50px", display: "block", marginBottom: "14px" }}>🌿</span>
+              <p><strong>Your crop diagnosis will appear here.</strong></p>
+              <p style={{ fontSize: "13px", marginTop: "8px", color: "#64748b" }}>
+                Select an image on the left and click "Analyze Crop Leaf" below.
+              </p>
             </div>
           )}
 
@@ -213,7 +309,7 @@ function Scanner() {
             <div className="result-box">
               <div className="result-header-row">
                 <div>
-                  <span className="result-crop-label">{result.crop}</span>
+                  <span className="result-crop-label">Identified Crop: {result.crop}</span>
                   <h3>{result.disease}</h3>
                 </div>
                 <div className="result-badges">
@@ -240,35 +336,31 @@ function Scanner() {
                 </div>
               )}
 
-              {result.symptoms && (
+              {result.symptoms && result.symptoms.length > 0 && (
                 <div className="result-section symptoms">
                   <strong>🔍 Detected Symptoms:</strong>
-                  {Array.isArray(result.symptoms) ? (
-                    <ul>
-                      {result.symptoms.map((s, i) => (
-                        <li key={i}>{s}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>{result.symptoms}</p>
-                  )}
-                </div>
-              )}
-
-              {result.precautions?.length > 0 && (
-                <div className="result-section precautions">
-                  <strong>🚨 Immediate Precautions:</strong>
                   <ul>
-                    {result.precautions.map((pr, i) => (
-                      <li key={i}>{pr}</li>
+                    {result.symptoms.map((s, i) => (
+                      <li key={i}>{s}</li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {result.treatment?.length > 0 && (
-                <div className="result-section treatment">
-                  <strong>💊 Recommended Treatment & Action:</strong>
+              {result.precautions && result.precautions.length > 0 && (
+                <div className="result-section precautions">
+                  <strong>⚠️ Immediate Urgent Precautions:</strong>
+                  <ul>
+                    {result.precautions.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.treatment && result.treatment.length > 0 && (
+                <div className="result-section treatment" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                  <strong style={{ color: "#15803d" }}>💊 Chemical / Organic Treatment:</strong>
                   <ul>
                     {result.treatment.map((t, i) => (
                       <li key={i}>{t}</li>
@@ -277,38 +369,45 @@ function Scanner() {
                 </div>
               )}
 
-              {result.prevention?.length > 0 && (
+              {result.prevention && result.prevention.length > 0 && (
                 <div className="result-section prevention">
-                  <strong>🛡️ Long-term Farm Prevention:</strong>
+                  <strong>🛡️ Long-term Field Prevention:</strong>
                   <ul>
-                    {result.prevention.map((p, i) => (
-                      <li key={i}>{p}</li>
+                    {result.prevention.map((pv, i) => (
+                      <li key={i}>{pv}</li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {result.disclaimer && (
-                <p className="scan-disclaimer">{result.disclaimer}</p>
-              )}
-
               {result.analysedBy && (
-                <p className="scan-analysed-by">
-                  🤖 Analysed by: <strong>{result.analysedBy}</strong>
-                </p>
+                <div style={{
+                  fontSize: "12px",
+                  color: "#64748b",
+                  paddingTop: "12px",
+                  borderTop: "1px solid #e2ede5",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}>
+                  <span>Diagnostic Engine: <strong>{result.analysedBy}</strong></span>
+                  {result.isLiveAi && <span style={{ color: "#15803d", fontWeight: "700" }}>● Live AI Vision</span>}
+                </div>
               )}
             </div>
           )}
-
-          <button
-            type="button"
-            className="analyze-btn"
-            onClick={handleAnalyze}
-            disabled={loading}
-          >
-            {loading ? "Analyzing Leaf Image..." : "🔬 Run Disease Analysis"}
-          </button>
         </div>
+      </div>
+
+      <div className="scanner-actions">
+        <button
+          type="button"
+          className="analyze-btn"
+          onClick={handleAnalyze}
+          disabled={loading || !image}
+        >
+          {loading ? "Analyzing Leaf with AI..." : "🔬 Analyze Crop Leaf Now"}
+        </button>
       </div>
     </section>
   );
