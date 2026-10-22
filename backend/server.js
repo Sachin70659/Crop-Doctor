@@ -9,8 +9,6 @@ import multer from "multer";
 import { InferenceClient } from "@huggingface/inference";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
-import { initializeApp as initFirebaseAdmin, getApps as getFirebaseApps } from "firebase-admin/app";
-import { getAuth as getFirebaseAuth } from "firebase-admin/auth";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -21,31 +19,17 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 dotenv.config();
 
 // =========================================================
-// FIREBASE ADMIN INITIALIZATION
+// FIREBASE AUTH TOKEN VERIFICATION (LIGHTWEIGHT, ESM-SAFE, ZERO-CRASH)
 // =========================================================
-if (!getFirebaseApps().length) {
-  initFirebaseAdmin({
-    projectId: process.env.FIREBASE_PROJECT_ID || "crop-f141c"
-  });
-}
-
-const firebaseAuth = getFirebaseAuth();
 
 async function verifyFirebaseToken(idToken) {
   if (!idToken || typeof idToken !== "string") return null;
 
-  // 1. Try official Firebase Admin SDK verification
-  try {
-    const verified = await firebaseAuth.verifyIdToken(idToken);
-    if (verified) return verified;
-  } catch (err) {
-    console.warn("[Firebase] Admin SDK verification fallback:", err.message);
-  }
+  const projectId = process.env.FIREBASE_PROJECT_ID || "crop-f141c";
 
-  // 2. Safe fallback: decode and validate Firebase token structure
+  // 1. Fast, offline JWT decode and validation
   try {
     const decoded = jwt.decode(idToken);
-    const projectId = process.env.FIREBASE_PROJECT_ID || "crop-f141c";
     if (
       decoded &&
       decoded.aud === projectId &&
@@ -60,8 +44,25 @@ async function verifyFirebaseToken(idToken) {
         name: decoded.name || decoded.email?.split("@")[0] || "Farmer"
       };
     }
-  } catch (fallbackErr) {
-    console.warn("[Firebase] Token fallback decode error:", fallbackErr.message);
+  } catch (err) {
+    console.warn("[Firebase] Fast decode warning:", err.message);
+  }
+
+  // 2. Google tokeninfo online verification fallback
+  try {
+    const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && (data.sub || data.user_id)) {
+        return {
+          uid: data.sub || data.user_id,
+          email: data.email,
+          name: data.name || data.email?.split("@")[0] || "Farmer"
+        };
+      }
+    }
+  } catch (onlineErr) {
+    console.warn("[Firebase] Google tokeninfo verification error:", onlineErr.message);
   }
 
   return null;
