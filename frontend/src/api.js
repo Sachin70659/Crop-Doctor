@@ -1,5 +1,6 @@
-export const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000";
+export const API_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/+$/, "");
 
 export async function apiRequest(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -11,9 +12,12 @@ export async function apiRequest(path, options = {}) {
     ...options.headers
   };
 
+  const cleanPath = (path.startsWith("/") ? path : `/${path}`).replace(/\/+/g, "/");
+  const url = `${API_URL}${cleanPath}`;
+
   let response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(url, {
       ...options,
       headers
     });

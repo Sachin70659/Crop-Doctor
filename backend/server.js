@@ -75,38 +75,55 @@ const PORT = process.env.PORT || 5000;
 // =========================================================
 const configuredClientUrls = (process.env.CLIENT_URL || "")
   .split(",")
-  .map(url => url.trim().replace(/\/$/, ""))
+  .map(url => url.trim().replace(/\/+$/, ""))
   .filter(Boolean);
 
 const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://localhost:3000",
+  "https://crop-doctor-green.vercel.app",
   ...configuredClientUrls
 ]);
 
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  const normalizedOrigin = origin.trim().replace(/\/+$/, "");
+  return (
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalizedOrigin) ||
+    allowedOrigins.has(normalizedOrigin) ||
+    normalizedOrigin.endsWith(".vercel.app")
+  );
+}
+
+// Global preflight interceptor to prevent any preflight redirects or delays
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && isAllowedOrigin(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
+    res.setHeader("Access-Control-Max-Age", "86400");
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  next();
+});
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow non-browser requests (e.g. mobile apps, curl, server-to-server)
-    if (!origin) return callback(null, true);
-
-    const normalizedOrigin = origin.replace(/\/$/, "");
-
-    // Allow any localhost/127.0.0.1 port, configured CLIENT_URLs, or Vercel deployments
-    if (
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalizedOrigin) ||
-      allowedOrigins.has(normalizedOrigin) ||
-      normalizedOrigin.endsWith(".vercel.app")
-    ) {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
-
     console.warn(`[CORS] Blocked request from origin: ${origin}`);
-    return callback(new Error(`Origin ${origin} not allowed by CORS.`));
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
   exposedHeaders: ["Content-Length", "X-Request-Id"],
   maxAge: 86400 // Cache preflight for 24 hours
 }));

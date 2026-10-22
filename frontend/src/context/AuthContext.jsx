@@ -32,8 +32,9 @@ export function AuthProvider({ children }) {
 
     try {
       const idToken = await fbUser.getIdToken();
+      const cleanApiUrl = (API_URL || "").replace(/\/+$/, "");
 
-      const res = await fetch(`${API_URL}/api/auth/firebase`, {
+      const res = await fetch(`${cleanApiUrl}/api/auth/firebase`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
