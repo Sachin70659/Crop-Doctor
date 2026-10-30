@@ -12,6 +12,7 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -92,6 +93,15 @@ export default function Admin() {
   useEffect(() => {
     loadData();
   }, [token]);
+
+  // Live Auto-Refresh polling (every 10 seconds)
+  useEffect(() => {
+    if (!autoRefresh || !token || (currentUser && currentUser.role !== "admin")) return;
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, token, currentUser]);
 
   // Flash toast notification
   const notify = (msg) => {
@@ -337,6 +347,32 @@ export default function Admin() {
           <button
             type="button"
             className="admin-refresh-btn"
+            onClick={() => setAutoRefresh((prev) => !prev)}
+            title="Toggle automatic live updates"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              background: autoRefresh ? "#ecfdf5" : "#f8fafc",
+              color: autoRefresh ? "#065f46" : "#64748b",
+              borderColor: autoRefresh ? "#6ee7b7" : "#cbd5e1",
+              fontWeight: 600
+            }}
+          >
+            <span
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: "50%",
+                backgroundColor: autoRefresh ? "#10b981" : "#94a3b8",
+                boxShadow: autoRefresh ? "0 0 8px #10b981" : "none"
+              }}
+            ></span>
+            {autoRefresh ? "Live Monitoring (10s): ON" : "Live Monitoring: OFF"}
+          </button>
+          <button
+            type="button"
+            className="admin-refresh-btn"
             onClick={() => loadData(true)}
             disabled={refreshing}
             title="Refresh database records"
@@ -570,8 +606,21 @@ export default function Admin() {
                             )}
                           </td>
                           <td>
-                            <strong>{scan.user?.name || "Farmer"}</strong>
-                            <div className="subtext">{scan.user?.email || "—"}</div>
+                            <strong>
+                              {scan.isGuest ? "🌐 Guest Visitor" : (scan.user?.name || scan.farmerName || "Farmer")}
+                            </strong>
+                            <div className="subtext">
+                              {scan.isGuest ? (
+                                <span style={{ color: "#d97706", fontWeight: "600" }}>Unregistered Guest</span>
+                              ) : (
+                                scan.user?.email || scan.farmerEmail || "—"
+                              )}
+                              {scan.ipAddress && (
+                                <span style={{ display: "block", fontSize: "0.75rem", color: "#64748b" }}>
+                                  IP: {scan.ipAddress}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td><strong>{scan.crop}</strong></td>
                           <td>{scan.disease}</td>
@@ -838,8 +887,21 @@ export default function Admin() {
                             )}
                           </td>
                           <td>
-                            <strong>{scan.user?.name || "Farmer"}</strong>
-                            <div className="subtext">{scan.user?.email || "—"}</div>
+                            <strong>
+                              {scan.isGuest ? "🌐 Guest Visitor" : (scan.user?.name || scan.farmerName || "Farmer")}
+                            </strong>
+                            <div className="subtext">
+                              {scan.isGuest ? (
+                                <span style={{ color: "#d97706", fontWeight: "600" }}>Unregistered Guest</span>
+                              ) : (
+                                scan.user?.email || scan.farmerEmail || "—"
+                              )}
+                              {scan.ipAddress && (
+                                <span style={{ display: "block", fontSize: "0.75rem", color: "#64748b" }}>
+                                  IP: {scan.ipAddress}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td>
                             <strong style={{ color: "#15803d" }}>{scan.crop}</strong>
@@ -1160,7 +1222,20 @@ export default function Admin() {
               )}
 
               <div className="report-footer-meta">
-                <span>Farmer: {selectedScanModal.user?.name} ({selectedScanModal.user?.email})</span>
+                <span>
+                  Farmer:{" "}
+                  <strong>
+                    {selectedScanModal.isGuest
+                      ? "🌐 Guest Visitor"
+                      : (selectedScanModal.user?.name || selectedScanModal.farmerName || "Farmer")}
+                  </strong>{" "}
+                  (
+                  {selectedScanModal.isGuest
+                    ? "Unregistered Guest"
+                    : (selectedScanModal.user?.email || selectedScanModal.farmerEmail || "—")}
+                  )
+                  {selectedScanModal.ipAddress && ` | IP: ${selectedScanModal.ipAddress}`}
+                </span>
                 <span>Date: {new Date(selectedScanModal.createdAt).toLocaleString()}</span>
               </div>
             </div>

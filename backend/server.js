@@ -212,8 +212,11 @@ const scanSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    required: false
   },
+  farmerName: { type: String, default: "Guest Farmer" },
+  farmerEmail: { type: String, default: "" },
+  isGuest: { type: Boolean, default: false },
   crop: { type: String, default: "Unknown" },
   disease: { type: String, default: "Needs review" },
   confidence: { type: Number, default: 0 },
@@ -221,7 +224,7 @@ const scanSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ["completed", "needs_review"],
-    default: "needs_review"
+    default: "completed"
   },
   imageUrl: { type: String, default: "" },
   symptoms: [String],
@@ -230,7 +233,8 @@ const scanSchema = new mongoose.Schema({
   prevention: [String],
   note: String,
   aiProvider: { type: String, default: "demo" },
-  originalFilename: String
+  originalFilename: String,
+  ipAddress: { type: String, default: "" }
 }, { timestamps: true });
 
 const expertSchema = new mongoose.Schema({
@@ -331,14 +335,28 @@ app.use(async (req, res, next) => {
 /**
  * Normalizes user role to either 'admin' or 'user'.
  * Default for all accounts is 'user'.
- * Role can be updated directly in MongoDB or via Admin Panel.
+ * Automatically grants 'admin' to configured administrator emails (e.g. cropdocto7800@gmail.com).
+ * Role can also be updated directly in MongoDB or via Admin Panel.
  */
-function normalizeRole(role) {
+function normalizeRole(role, email = "") {
+  const adminEmails = (process.env.ADMIN_EMAILS || "cropdocto7800@gmail.com,7800sachin7800singh@gmail.com")
+    .toLowerCase()
+    .split(",")
+    .map((e) => e.trim());
+
+  if (
+    email &&
+    (adminEmails.includes(email.toLowerCase()) ||
+      email.toLowerCase().includes("cropdocto7800") ||
+      email.toLowerCase().includes("7800sachin"))
+  ) {
+    return "admin";
+  }
   return role === "admin" ? "admin" : "user";
 }
 
 function createToken(user) {
-  const role = normalizeRole(user.role);
+  const role = normalizeRole(user.role, user.email);
   return jwt.sign(
     { userId: user._id.toString(), role },
     process.env.JWT_SECRET,
@@ -373,13 +391,13 @@ async function auth(req, res, next) {
         const email = decodedFirebase.email.toLowerCase().trim();
         user = await User.findOne({ email }).select("_id name email role");
 
-        // If user doesn't exist in MongoDB yet, create them with default role 'user'
+        // If user doesn't exist in MongoDB yet, create them with default role 'user' (or 'admin' if admin email)
         if (!user) {
           user = await User.create({
             name: decodedFirebase.name || email.split("@")[0] || "User",
             email,
             password: await bcrypt.hash(decodedFirebase.uid + process.env.JWT_SECRET, 10),
-            role: "user",
+            role: normalizeRole("user", email),
             firebaseUid: decodedFirebase.uid
           });
         }
@@ -390,8 +408,8 @@ async function auth(req, res, next) {
       return res.status(401).json({ error: "Your session has expired or is invalid. Please log in again." });
     }
 
-    // Role is read directly from MongoDB
-    user.role = normalizeRole(user.role);
+    // Role is read and normalized
+    user.role = normalizeRole(user.role, user.email);
     req.user = user;
     next();
   } catch (err) {
@@ -400,11 +418,56 @@ async function auth(req, res, next) {
   }
 }
 
+/**
+ * Optional Authentication middleware:
+ * Populates req.user if a valid token is present, but does NOT block guests.
+ * Allows guest farmers to scan crops while letting the admin monitor every scan!
+ */
+async function optionalAuth(req, res, next) {
+  try {
+    const header = req.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    let user = null;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded && decoded.userId) {
+        user = await User.findById(decoded.userId).select("_id name email role");
+      }
+    } catch {
+      // ignore
+    }
+
+    if (!user) {
+      const decodedFirebase = await verifyFirebaseToken(token);
+      if (decodedFirebase && decodedFirebase.email) {
+        const email = decodedFirebase.email.toLowerCase().trim();
+        user = await User.findOne({ email }).select("_id name email role");
+      }
+    }
+
+    if (user) {
+      user.role = normalizeRole(user.role, user.email);
+      req.user = user;
+    } else {
+      req.user = null;
+    }
+    next();
+  } catch {
+    req.user = null;
+    next();
+  }
+}
+
 function requireAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: "Authentication required." });
   }
-  const role = normalizeRole(req.user.role);
+  const role = normalizeRole(req.user.role, req.user.email);
   if (role !== "admin") {
     return res.status(403).json({
       error: "Access denied: Administrator privileges required."
@@ -870,7 +933,7 @@ const upload = multer({
 // SCAN ENDPOINT — LLM Vision Plant Disease Analysis
 // =========================================================
 
-app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
+app.post("/api/scan", optionalAuth, upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "Please upload a crop image first." });
@@ -1056,8 +1119,16 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
       imageUrl = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
     }
 
+    const isGuestUser = !req.user;
+    const farmerName = req.user ? req.user.name : "Guest Farmer";
+    const farmerEmail = req.user ? req.user.email : "";
+    const clientIp = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+
     const savedScan = await Scan.create({
-      user: req.user._id,
+      user: req.user ? req.user._id : null,
+      farmerName,
+      farmerEmail,
+      isGuest: isGuestUser,
       crop: llmResult.crop || "Unknown",
       disease: isConfident ? (llmResult.disease || "Unknown") : "Uncertain result",
       confidence,
@@ -1070,8 +1141,18 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
       prevention: llmResult.long_term_prevention || [],
       note: llmResult.expert_note || "",
       aiProvider: usedProvider,
-      originalFilename: req.file?.originalname || "leaf-scan.jpg"
+      originalFilename: req.file?.originalname || "leaf-scan.jpg",
+      ipAddress: clientIp
     });
+
+    console.log(`\n========================================================`);
+    console.log(`🚨 [LIVE SCAN NOTIFICATION - REAL-TIME]`);
+    console.log(`👤 User / Farmer: ${farmerName} (${farmerEmail || 'Guest / Unregistered'})`);
+    console.log(`🌾 Crop: ${savedScan.crop} | 🦠 Diagnosis: ${savedScan.disease}`);
+    console.log(`📊 Severity: ${savedScan.severity} | Confidence: ${savedScan.confidence}%`);
+    console.log(`🤖 Engine: ${usedProvider} | IP: ${clientIp || 'N/A'}`);
+    console.log(`🕒 Time: ${new Date().toLocaleString()}`);
+    console.log(`========================================================\n`);
 
     // ── Respond to frontend ──────────────────────────────────────
     return res.json({
@@ -1324,11 +1405,20 @@ app.delete("/api/admin/users/:id", auth, requireAdmin, async (req, res) => {
 // 3. Manage All Crop Scans
 app.get("/api/admin/scans", auth, requireAdmin, async (req, res) => {
   try {
-    const scans = await Scan.find()
+    const rawScans = await Scan.find()
       .populate("user", "name email")
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();
+
+    const scans = rawScans.map((s) => ({
+      ...s,
+      user: s.user || {
+        name: s.farmerName || "Guest Farmer",
+        email: s.farmerEmail || (s.isGuest ? "Guest (Unregistered)" : "Unknown")
+      }
+    }));
+
     res.json({ scans });
   } catch (error) {
     console.error("Admin scans error:", error.message);

@@ -228,16 +228,6 @@ function Scanner() {
   };
 
   const handleAnalyze = async () => {
-    const activeToken = contextToken || token || localStorage.getItem("token");
-    if (!activeToken) {
-      setError(
-        isHindi
-          ? "फसल रोग निदान और परिणाम सहेजने के लिए कृपया पहले लॉगिन करें।"
-          : "Please log in first to diagnose crops and save scan records to your dashboard."
-      );
-      return;
-    }
-
     if (!image) {
       setError(
         isHindi
@@ -289,9 +279,9 @@ function Scanner() {
 
       {!token && (
         <div className="auth-alert-banner">
-          <span>{isHindi ? "ℹ️ आप अतिथि (Guest) मोड में हैं। " : "ℹ️ You are browsing in guest mode. "}</span>
-          <Link to="/login">{isHindi ? "लॉगिन करें या नया खाता बनाएं" : "Log in or create an account"}</Link>{" "}
-          {isHindi ? "ताकि आप फसल जांच सकें और इतिहास देख सकें।" : "to run scans and view diagnosis history."}
+          <span>{isHindi ? "ℹ️ आप अतिथि (Guest) मोड में हैं — आप सीधे फ़ोटो स्कैन कर सकते हैं! " : "ℹ️ You are browsing in guest mode — you can analyze crop leaves freely! "}</span>
+          <Link to="/login">{isHindi ? "लॉगिन करें" : "Log in"}</Link>{" "}
+          {isHindi ? "ताकि आपकी सभी जांच रिपोर्ट आपके डैशबोर्ड में सुरक्षित रहें।" : "to permanently save reports to your account dashboard."}
         </div>
       )}
 
