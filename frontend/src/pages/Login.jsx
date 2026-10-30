@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { firebaseGoogleSignIn } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 function Login() {
   const navigate = useNavigate();
   const { syncWithBackend } = useAuth();
+  const { isHindi, t } = useLanguage();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,18 +22,18 @@ function Login() {
     try {
       const fbUser = await firebaseGoogleSignIn();
       await syncWithBackend(fbUser);
-      setSuccess("Successfully signed in with Google!");
+      setSuccess(isHindi ? "Google द्वारा सफलतापूर्वक लॉगिन हो गया!" : "Successfully signed in with Google!");
       navigate("/dashboard", { replace: true });
     } catch (err) {
       console.error("[Google Auth Error]:", err);
       if (err.code === "auth/popup-closed-by-user") {
-        setError("Sign-in cancelled. Please click the button below to sign in.");
+        setError(isHindi ? "लॉगिन रद्द किया गया। कृपया पुनः प्रयास करें।" : "Sign-in cancelled. Please click the button below to sign in.");
       } else if (err.code === "auth/popup-blocked") {
-        setError("Browser popup was blocked. Please allow popups for this site and try again.");
+        setError(isHindi ? "ब्राउज़र पॉपअप अवरुद्ध हो गया। कृपया अनुमति दें।" : "Browser popup was blocked. Please allow popups for this site and try again.");
       } else if (err.code === "auth/network-request-failed") {
-        setError("Network error. Please check your internet connection.");
+        setError(isHindi ? "नेटवर्क त्रुटि। कृपया इंटरनेट कनेक्शन जांचें।" : "Network error. Please check your internet connection.");
       } else {
-        setError(err.message || "Google sign-in could not be completed. Please try again.");
+        setError(err.message || (isHindi ? "लॉगिन पूरा नहीं हो सका। कृपया पुनः प्रयास करें।" : "Google sign-in could not be completed. Please try again."));
       }
     } finally {
       setLoading(false);
@@ -53,13 +55,13 @@ function Login() {
 
         <div className="page-heading" style={{ marginBottom: "28px" }}>
           <p style={{ color: "#15803d", fontWeight: "800", fontSize: "12px", letterSpacing: "0.08em" }}>
-            FARMER ACCESS PORTAL
+            {t("login.badge", "FARMER ACCESS PORTAL")}
           </p>
           <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#0f2e1b", margin: "6px 0 10px" }}>
-            Sign In with Google
+            {t("login.title", "Sign In to Crop Doctor")}
           </h1>
           <span style={{ fontSize: "14px", color: "#64748b", lineHeight: "1.6" }}>
-            Access your AI plant scans, disease treatment plans, and agronomist consultations with one click.
+            {t("login.subtitle", "Access saved leaf scans, track field history, receive weather advisories, and get direct agronomist recommendations.")}
           </span>
         </div>
 
@@ -117,7 +119,7 @@ function Login() {
             <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
             <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           </svg>
-          <span>{loading ? "Signing in with Google..." : "Continue with Google"}</span>
+          <span>{loading ? (isHindi ? "गूगल से लॉगिन हो रहा है..." : "Signing in with Google...") : (isHindi ? "Google से जारी रखें" : "Continue with Google")}</span>
         </button>
 
         {/* Feature Highlights */}
@@ -132,20 +134,22 @@ function Login() {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", color: "#475569" }}>
             <span style={{ color: "#15803d", fontWeight: "900" }}>✓</span>
-            <span>One-click instant authentication (no password to remember)</span>
+            <span>{isHindi ? "एक क्लिक में तुरंत प्रमाणीकरण (पासवर्ड याद रखने का झंझट नहीं)" : "One-click instant authentication (no password to remember)"}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", color: "#475569" }}>
             <span style={{ color: "#15803d", fontWeight: "900" }}>✓</span>
-            <span>Auto-syncs all AI leaf disease diagnoses to MongoDB Atlas</span>
+            <span>{isHindi ? "सभी एआई फसल जांच रिकॉर्ड सुरक्षित रूप से सहेजे जाते हैं" : "Auto-syncs all AI leaf disease diagnoses to cloud database"}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", color: "#475569" }}>
             <span style={{ color: "#15803d", fontWeight: "900" }}>✓</span>
-            <span>Enterprise-grade security powered by Google Firebase</span>
+            <span>{isHindi ? "गूगल फायरबेस द्वारा उच्च स्तरीय सुरक्षा" : "Enterprise-grade security powered by Google Firebase"}</span>
           </div>
         </div>
 
         <div className="auth-back-link" style={{ marginTop: "28px" }}>
-          <Link to="/" style={{ color: "#15803d", fontWeight: "700" }}>← Back to Home</Link>
+          <Link to="/" style={{ color: "#15803d", fontWeight: "700" }}>
+            {isHindi ? "← होम पर वापस जाएं" : "← Back to Home"}
+          </Link>
         </div>
       </div>
     </section>

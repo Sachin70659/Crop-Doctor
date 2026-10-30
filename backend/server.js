@@ -435,7 +435,7 @@ IMPORTANT — Return ONLY valid JSON, no markdown fences, no extra text. Use thi
 /**
  * Analyse an image buffer with Google Gemini Vision.
  */
-async function analyseWithGemini(imageBuffer, mimeType, cropHint = "") {
+async function analyseWithGemini(imageBuffer, mimeType, cropHint = "", language = "en") {
   const client = getGeminiClient();
   if (!client) {
     throw new Error("Gemini API key is not configured.");
@@ -456,9 +456,13 @@ async function analyseWithGemini(imageBuffer, mimeType, cropHint = "") {
     }
   };
 
+  const langInstruction = language === "hi"
+    ? "\n\nCRITICAL LANGUAGE REQUIREMENT: The farmer prefers HINDI. You MUST provide observed_symptoms, immediate_precautions, treatment, long_term_prevention, and expert_note in Hindi (Devanagari script), keeping chemical/technical names in English or brackets. Also provide crop and disease names in bilingual Hindi/English format (e.g. 'टमाटर / Tomato', 'अगेती झुलसा / Early Blight')."
+    : "";
+
   const promptText = cropHint && cropHint !== "auto"
-    ? `${VISION_SYSTEM_PROMPT}\n\nNOTE: The farmer indicates this is likely: "${cropHint}". Please verify if the image matches "${cropHint}" or identify the exact crop shown.`
-    : VISION_SYSTEM_PROMPT;
+    ? `${VISION_SYSTEM_PROMPT}${langInstruction}\n\nNOTE: The farmer indicates this is likely: "${cropHint}". Please verify if the image matches "${cropHint}" or identify the exact crop shown.`
+    : `${VISION_SYSTEM_PROMPT}${langInstruction}`;
 
   let lastError = null;
   for (const modelName of modelCandidates) {
@@ -829,6 +833,7 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
     }
 
     const cropHint = (req.body.cropHint || req.body.crop || "").trim();
+    const language = (req.body.language || req.body.lang || "en").trim().toLowerCase();
     const mimeType = req.file.mimetype;
     const imageBuffer = req.file.buffer;
 
@@ -839,8 +844,8 @@ app.post("/api/scan", auth, upload.single("image"), async (req, res) => {
     const gemini = getGeminiClient();
     if (gemini) {
       try {
-        console.log(`[Gemini] Analyzing plant image (Hint: "${cropHint || 'Auto'}") ...`);
-        llmResult = await analyseWithGemini(imageBuffer, mimeType, cropHint);
+        console.log(`[Gemini] Analyzing plant image (Hint: "${cropHint || 'Auto'}", Lang: "${language}") ...`);
+        llmResult = await analyseWithGemini(imageBuffer, mimeType, cropHint, language);
         usedProvider = "gemini";
         console.log(`[Gemini] Diagnosis complete: ${llmResult.crop} — ${llmResult.disease}`);
       } catch (err) {

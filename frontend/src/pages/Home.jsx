@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 
 function Home() {
+  const { t, isHindi } = useLanguage();
+
   return (
     <div className="home-container">
       {/* ─── HERO SECTION ─────────────────────────────────── */}
@@ -10,16 +13,16 @@ function Home() {
           <div className="hero-content">
             <div className="hero-badge">
               <span className="hero-badge-dot"></span>
-              <span className="hero-badge-text">AI Plant Pathology 2.0 • 98% Accuracy</span>
+              <span className="hero-badge-text">{t("home.badge", "AI Plant Pathology 2.0 • 98% Accuracy")}</span>
             </div>
 
             <h1 className="hero-heading">
-              Protect Your Harvest <br />
-              <span className="gradient-text">With AI Agronomy</span>
+              {t("home.heroTitle1", "Protect Your Harvest")} <br />
+              <span className="gradient-text">{t("home.heroTitle2", "With AI Agronomy")}</span>
             </h1>
 
             <p className="hero-description">
-              Detect fungal blights, rusts, pests, and nutrient deficiencies from a single leaf photo. Get instant organic & chemical cure protocols curated by agricultural scientists.
+              {t("home.heroDesc", "Detect fungal blights, rusts, pests, and nutrient deficiencies from a single leaf photo. Get instant organic & chemical cure protocols curated by agricultural scientists.")}
             </p>
 
             <div className="hero-cta-group">
@@ -28,7 +31,7 @@ function Home() {
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                   <circle cx="12" cy="13" r="4" />
                 </svg>
-                <span>Diagnose Crop Leaf</span>
+                <span>{t("home.diagnoseBtn", "Diagnose Crop Leaf")}</span>
               </Link>
 
               <Link to="/crops" className="btn-secondary-hero">
@@ -37,7 +40,7 @@ function Home() {
                   <path d="M6 6h10" />
                   <path d="M6 10h10" />
                 </svg>
-                <span>Crop Encyclopedia</span>
+                <span>{t("home.cropsBtn", "Crop Encyclopedia")}</span>
               </Link>
             </div>
 
@@ -45,15 +48,15 @@ function Home() {
             <div className="hero-trust-bar">
               <div className="trust-item">
                 <span className="trust-check">✓</span>
-                <span>Fast 2-Sec AI Vision</span>
+                <span>{t("home.trust1", "Fast 2-Sec AI Vision")}</span>
               </div>
               <div className="trust-item">
                 <span className="trust-check">✓</span>
-                <span>40+ Diseases Covered</span>
+                <span>{t("home.trust2", "40+ Diseases Covered")}</span>
               </div>
               <div className="trust-item">
                 <span className="trust-check">✓</span>
-                <span>100% Free for Farmers</span>
+                <span>{t("home.trust3", "100% Free for Farmers")}</span>
               </div>
             </div>
           </div>
@@ -65,9 +68,9 @@ function Home() {
               <div className="preview-card-header">
                 <div className="preview-status-pill">
                   <span className="status-live-pulse"></span>
-                  <span>AI Vision Live Demo</span>
+                  <span>{t("home.liveDemo", "AI Vision Live Demo")}</span>
                 </div>
-                <span className="preview-crop-tag">Tomato (Solanum lycopersicum)</span>
+                <span className="preview-crop-tag">{isHindi ? "टमाटर (Solanum lycopersicum)" : "Tomato (Solanum lycopersicum)"}</span>
               </div>
 
               <div className="preview-image-box">
@@ -76,27 +79,35 @@ function Home() {
                   <div className="scan-laser-line"></div>
                 </div>
                 <div className="preview-detection-badge">
-                  <span className="badge-severity moderate">Moderate Severity</span>
-                  <span className="badge-confidence">94% Confidence</span>
+                  <span className="badge-severity moderate">{t("home.moderateSeverity", "Moderate Severity")}</span>
+                  <span className="badge-confidence">{t("home.confidenceSample", "94% Confidence")}</span>
                 </div>
               </div>
 
               <div className="preview-card-body">
-                <h4 className="preview-diagnosis-title">Early Blight (Alternaria solani)</h4>
+                <h4 className="preview-diagnosis-title">
+                  {isHindi ? "अगेती झुलसा (Early Blight - Alternaria solani)" : "Early Blight (Alternaria solani)"}
+                </h4>
                 <p className="preview-diagnosis-desc">
-                  Concentric dark brown rings observed on lower foliar tissue with chlorotic yellow halo.
+                  {isHindi
+                    ? "निचली पत्तियों पर गोल भूरे छल्लेदार धब्बे और चारों ओर पीलापन देखा गया।"
+                    : "Concentric dark brown rings observed on lower foliar tissue with chlorotic yellow halo."}
                 </p>
 
                 <div className="preview-action-snippet">
-                  <span className="snippet-label">Urgent Action:</span>
-                  <p className="snippet-text">Spray Mancozeb 75 WP @ 2g/L. Rogue infected bottom leaves immediately.</p>
+                  <span className="snippet-label">{t("home.urgentAction", "Urgent Action:")}</span>
+                  <p className="snippet-text">
+                    {isHindi
+                      ? "मैनकोज़ेब 75 WP @ 2 ग्राम/लीटर पानी में घोलकर छिड़कें। रोगग्रस्त निचली पत्तियों को तुरंत तोड़कर नष्ट करें।"
+                      : "Spray Mancozeb 75 WP @ 2g/L. Rogue infected bottom leaves immediately."}
+                  </p>
                 </div>
               </div>
 
               <div className="preview-card-footer">
                 <div className="footer-meta">
                   <span className="meta-icon">🌦️</span>
-                  <span>Safe spraying window: 7:00 AM – 10:00 AM</span>
+                  <span>{t("home.sprayingWindow", "Safe spraying window: 7:00 AM – 10:00 AM")}</span>
                 </div>
               </div>
             </div>
@@ -109,23 +120,23 @@ function Home() {
         <div className="stats-grid">
           <div className="stat-card">
             <h3 className="stat-number">98.4%</h3>
-            <p className="stat-label">Diagnostic Accuracy</p>
-            <span className="stat-sub">Validated against leaf pathology</span>
+            <p className="stat-label">{isHindi ? "निदान सटीकता" : "Diagnostic Accuracy"}</p>
+            <span className="stat-sub">{isHindi ? "पादप रोग विज्ञान मानकों द्वारा परीक्षित" : "Validated against leaf pathology"}</span>
           </div>
           <div className="stat-card">
             <h3 className="stat-number">40+</h3>
-            <p className="stat-label">Crop Diseases</p>
-            <span className="stat-sub">Fungal, bacterial & viral species</span>
+            <p className="stat-label">{isHindi ? "फसल रोग" : "Crop Diseases"}</p>
+            <span className="stat-sub">{isHindi ? "फंगल, बैक्टीरियल व वायरस जनित" : "Fungal, bacterial & viral species"}</span>
           </div>
           <div className="stat-card">
             <h3 className="stat-number">&lt; 2s</h3>
-            <p className="stat-label">Scan Speed</p>
-            <span className="stat-sub">Real-time Gemini Vision engine</span>
+            <p className="stat-label">{isHindi ? "स्कैन गति" : "Scan Speed"}</p>
+            <span className="stat-sub">{isHindi ? "त्वरित जेमिनी विज़न एआई इंजन" : "Real-time Gemini Vision engine"}</span>
           </div>
           <div className="stat-card">
             <h3 className="stat-number">24/7</h3>
-            <p className="stat-label">Agronomist Portal</p>
-            <span className="stat-sub">Consult field specialists anytime</span>
+            <p className="stat-label">{isHindi ? "कृषि विशेषज्ञ पोर्टल" : "Agronomist Portal"}</p>
+            <span className="stat-sub">{isHindi ? "कृषि वैज्ञानिकों से कभी भी पूछें" : "Consult field specialists anytime"}</span>
           </div>
         </div>
       </section>
@@ -133,10 +144,12 @@ function Home() {
       {/* ─── FEATURES SHOWCASE GRID ───────────────────────── */}
       <section className="features-section">
         <div className="section-header-center">
-          <span className="section-pill">FARM TOOLS ECOSYSTEM</span>
-          <h2 className="section-title">Everything Your Farm Needs</h2>
+          <span className="section-pill">{isHindi ? "कृषि समाधान पारिस्थितिकी तंत्र" : "FARM TOOLS ECOSYSTEM"}</span>
+          <h2 className="section-title">{isHindi ? "आपके खेत के लिए संपूर्ण समाधान" : "Everything Your Farm Needs"}</h2>
           <p className="section-subtitle">
-            Integrated diagnostic, advisory, weather, and farm store solutions engineered for modern cultivators.
+            {isHindi
+              ? "फसल रोग निदान, मौसम परामर्श, विशेषज्ञ सलाह और कृषि उत्पादों की एक ही स्थान पर उपलब्धता।"
+              : "Integrated diagnostic, advisory, weather, and farm store solutions engineered for modern cultivators."}
           </p>
         </div>
 
@@ -149,13 +162,15 @@ function Home() {
                 <circle cx="12" cy="13" r="4" />
               </svg>
             </div>
-            <div className="card-badge-top">Live AI</div>
-            <h3 className="card-title">AI Leaf Scanner</h3>
+            <div className="card-badge-top">{isHindi ? "लाइव एआई" : "Live AI"}</div>
+            <h3 className="card-title">{isHindi ? "एआई पत्ती स्कैनर" : "AI Leaf Scanner"}</h3>
             <p className="card-text">
-              Upload smartphone photos of leaves to instantly identify blights, rusts, mildews, and nutrient starvation symptoms.
+              {isHindi
+                ? "स्मार्टफोन से पत्ती की फोटो अपलोड करके झुलसा, रस्ट, फफूंद और पोषक तत्वों की कमी को तुरंत पहचानें।"
+                : "Upload smartphone photos of leaves to instantly identify blights, rusts, mildews, and nutrient starvation symptoms."}
             </p>
             <div className="card-footer-link">
-              <span>Launch Scanner</span>
+              <span>{isHindi ? "स्कैनर शुरू करें" : "Launch Scanner"}</span>
               <span className="arrow-icon">→</span>
             </div>
           </Link>
@@ -168,12 +183,14 @@ function Home() {
                 <path d="M12 12v10" />
               </svg>
             </div>
-            <h3 className="card-title">Crop Encyclopedia</h3>
+            <h3 className="card-title">{isHindi ? "फसल ज्ञानकोष" : "Crop Encyclopedia"}</h3>
             <p className="card-text">
-              Comprehensive profiles for Rabi, Kharif, and Zaid crops with soil compatibility, nursery timings, and duration data.
+              {isHindi
+                ? "रबी, खरीफ और जायद की फसलों के लिए उपयुक्त मिट्टी, बुवाई का समय और अवधि की संपूर्ण जानकारी।"
+                : "Comprehensive profiles for Rabi, Kharif, and Zaid crops with soil compatibility, nursery timings, and duration data."}
             </p>
             <div className="card-footer-link">
-              <span>Browse Crops</span>
+              <span>{isHindi ? "फसलें देखें" : "Browse Crops"}</span>
               <span className="arrow-icon">→</span>
             </div>
           </Link>
@@ -185,12 +202,14 @@ function Home() {
                 <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
               </svg>
             </div>
-            <h3 className="card-title">Farm Weather Forecast</h3>
+            <h3 className="card-title">{isHindi ? "खेत का मौसम पूर्वानुमान" : "Farm Weather Forecast"}</h3>
             <p className="card-text">
-              Real-time relative humidity, temperature, wind speeds, and rain forecasts to plan pesticide spraying windows.
+              {isHindi
+                ? "दवा और कीटनाशक छिड़काव की सही योजना के लिए नमी, तापमान, हवा की गति और बारिश का लाइव डेटा।"
+                : "Real-time relative humidity, temperature, wind speeds, and rain forecasts to plan pesticide spraying windows."}
             </p>
             <div className="card-footer-link">
-              <span>Check Weather</span>
+              <span>{isHindi ? "मौसम देखें" : "Check Weather"}</span>
               <span className="arrow-icon">→</span>
             </div>
           </Link>
@@ -205,12 +224,14 @@ function Home() {
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </div>
-            <h3 className="card-title">Expert Consultation</h3>
+            <h3 className="card-title">{isHindi ? "कृषि विशेषज्ञ सलाह" : "Expert Consultation"}</h3>
             <p className="card-text">
-              Submit atypical field symptoms to certified extension officers for personalized agronomy recommendations.
+              {isHindi
+                ? "असामान्य लक्षणों या अज्ञात कीट प्रकोप की समस्या भेजें और कृषि वैज्ञानिकों से व्यक्तिगत सलाह पाएं।"
+                : "Submit atypical field symptoms to certified extension officers for personalized agronomy recommendations."}
             </p>
             <div className="card-footer-link">
-              <span>Ask an Expert</span>
+              <span>{isHindi ? "विशेषज्ञ से पूछें" : "Ask an Expert"}</span>
               <span className="arrow-icon">→</span>
             </div>
           </Link>
@@ -224,12 +245,14 @@ function Home() {
                 <path d="M16 10a4 4 0 0 1-8 0" />
               </svg>
             </div>
-            <h3 className="card-title">Farm Store</h3>
+            <h3 className="card-title">{isHindi ? "कृषि सेवा केंद्र व बाज़ार" : "Farm Store"}</h3>
             <p className="card-text">
-              Curated organic fertilizers, high-yield vegetable seed varieties, and professional pruning and spraying equipment.
+              {isHindi
+                ? "सत्यापित जैविक खाद, रोगरोधी संकर बीज और उच्च गुणवत्ता वाले बैटरी स्प्रेयर उपकरण।"
+                : "Curated organic fertilizers, high-yield vegetable seed varieties, and professional pruning and spraying equipment."}
             </p>
             <div className="card-footer-link">
-              <span>Visit Shop</span>
+              <span>{isHindi ? "दुकान देखें" : "Visit Shop"}</span>
               <span className="arrow-icon">→</span>
             </div>
           </Link>
@@ -251,12 +274,14 @@ function Home() {
                 <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" />
               </svg>
             </div>
-            <h3 className="card-title">Pathology Library</h3>
+            <h3 className="card-title">{isHindi ? "रोग व उपचार लाइब्रेरी" : "Pathology Library"}</h3>
             <p className="card-text">
-              Reference guide detailing symptom onset, causative pathogens, and cultural mitigation techniques for 50+ diseases.
+              {isHindi
+                ? "50+ प्रमुख फसल रोगों के लक्षण, शुरुआती पहचान और रोकथाम के जैविक व रासायनिक उपाय।"
+                : "Reference guide detailing symptom onset, causative pathogens, and cultural mitigation techniques for 50+ diseases."}
             </p>
             <div className="card-footer-link">
-              <span>View Library</span>
+              <span>{isHindi ? "लाइब्रेरी देखें" : "View Library"}</span>
               <span className="arrow-icon">→</span>
             </div>
           </Link>
@@ -266,10 +291,12 @@ function Home() {
       {/* ─── 3-STEP WORKFLOW ──────────────────────────────── */}
       <section className="workflow-section">
         <div className="section-header-center">
-          <span className="section-pill">HOW IT WORKS</span>
-          <h2 className="section-title">Diagnose Crops in 3 Easy Steps</h2>
+          <span className="section-pill">{isHindi ? "कार्यप्रणाली" : "HOW IT WORKS"}</span>
+          <h2 className="section-title">{isHindi ? "3 आसान चरणों में फसल की जांच" : "Diagnose Crops in 3 Easy Steps"}</h2>
           <p className="section-subtitle">
-            From field photo to verified chemical & organic treatment instructions in under 15 seconds.
+            {isHindi
+              ? "खेत में फोटो खींचने से लेकर 15 सेकंड के अंदर दवा और जैविक उपचार का पूरा नुस्खा पाएं।"
+              : "From field photo to verified chemical & organic treatment instructions in under 15 seconds."}
           </p>
         </div>
 
@@ -277,27 +304,33 @@ function Home() {
           <div className="step-card">
             <div className="step-number">01</div>
             <div className="step-icon-box">📸</div>
-            <h3 className="step-title">Take a Photo</h3>
+            <h3 className="step-title">{isHindi ? "पत्ती की फोटो लें" : "Take a Photo"}</h3>
             <p className="step-desc">
-              Snap a clear, well-lit photo of the affected plant leaf or crop canopy showing visible spots or curling.
+              {isHindi
+                ? "प्रभावित पौधे की पत्ती या शाखा की दिन के उजाले में साफ़ और नज़दीक से फोटो खींचें।"
+                : "Snap a clear, well-lit photo of the affected plant leaf or crop canopy showing visible spots or curling."}
             </p>
           </div>
 
           <div className="step-card">
             <div className="step-number">02</div>
             <div className="step-icon-box">🧠</div>
-            <h3 className="step-title">Instant AI Diagnosis</h3>
+            <h3 className="step-title">{isHindi ? "त्वरित एआई निदान" : "Instant AI Diagnosis"}</h3>
             <p className="step-desc">
-              Gemini Vision AI inspects lesion borders, color changes, and fungal spore signs to identify the exact pathogen.
+              {isHindi
+                ? "जेमिनी विज़न एआई धब्बों के किनारों, रंग के बदलाव और फंगल बीजाणुओं का विश्लेषण कर सटीक रोग बताता है।"
+                : "Gemini Vision AI inspects lesion borders, color changes, and fungal spore signs to identify the exact pathogen."}
             </p>
           </div>
 
           <div className="step-card">
             <div className="step-number">03</div>
             <div className="step-icon-box">💊</div>
-            <h3 className="step-title">Apply Cure & Prevent</h3>
+            <h3 className="step-title">{isHindi ? "उपचार करें व फसल बचाएं" : "Apply Cure & Prevent"}</h3>
             <p className="step-desc">
-              Receive clear fungicide dosages, organic alternatives (like neem oil), and soil management steps to protect the rest of your field.
+              {isHindi
+                ? "फफूंदनाशक दवा की सटीक मात्रा, नीम तेल के जैविक नुस्खे और मिट्टी की देखभाल की सलाह प्राप्त करें।"
+                : "Receive clear fungicide dosages, organic alternatives (like neem oil), and soil management steps to protect the rest of your field."}
             </p>
           </div>
         </div>
@@ -307,17 +340,19 @@ function Home() {
       <section className="cta-banner-section">
         <div className="cta-banner-box">
           <div className="cta-banner-content">
-            <span className="cta-mini-tag">START PROTECTING TODAY</span>
-            <h2 className="cta-title">Healthy Crops, Higher Yields</h2>
+            <span className="cta-mini-tag">{isHindi ? "आज ही फसल सुरक्षित करें" : "START PROTECTING TODAY"}</span>
+            <h2 className="cta-title">{isHindi ? "स्वस्थ फसल, समृद्ध किसान" : "Healthy Crops, Higher Yields"}</h2>
             <p className="cta-subtitle">
-              Join thousands of farmers making data-driven agricultural decisions. No subscription, no complex downloads.
+              {isHindi
+                ? "हज़ारों किसानों के साथ जुड़ें जो वैज्ञानिक तरीके से खेती कर रहे हैं। 100% निःशुल्क और आसान।"
+                : "Join thousands of farmers making data-driven agricultural decisions. No subscription, no complex downloads."}
             </p>
             <div className="cta-button-row">
               <Link to="/scanner" className="btn-cta-primary">
-                📷 Scan a Crop Now
+                {isHindi ? "📷 अभी फसल की पत्ती जांचें" : "📷 Scan a Crop Now"}
               </Link>
               <Link to="/login" className="btn-cta-secondary">
-                Create Free Account →
+                {isHindi ? "निशुल्क किसान खाता बनाएं →" : "Create Free Account →"}
               </Link>
             </div>
           </div>

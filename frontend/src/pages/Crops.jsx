@@ -1,65 +1,103 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api";
+import { useLanguage } from "../context/LanguageContext";
 
 const FALLBACK_CROPS = [
   {
     name: "Wheat",
+    nameHi: "गेहूं (Wheat)",
     season: "Rabi",
+    seasonHi: "रबी",
     icon: "🌾",
     description: "A major cool-season cereal crop essential for flour and food security worldwide.",
+    descriptionHi: "सर्दियों की प्रमुख खाद्यान्न फसल, जो देश भर में आटे और खाद्य सुरक्षा के लिए अनिवार्य है।",
     soil: "Well-drained loamy to clay loam soil (pH 6.0 - 7.5)",
+    soilHi: "उचित जल निकास वाली बलुई दोमट या मटियार दोमट मिट्टी (pH 6.0 - 7.5)",
     duration: "110 - 140 days",
-    tips: "Ensure timely sowing in November; requires 4-6 irrigations at crown root initiation and flowering."
+    durationHi: "110 - 140 दिन",
+    tips: "Ensure timely sowing in November; requires 4-6 irrigations at crown root initiation and flowering.",
+    tipsHi: "नवंबर में समय पर बुवाई करें; ताजमूल (CRI) और फूल आने की अवस्था पर 4-6 सिंचाई आवश्यक हैं।"
   },
   {
     name: "Rice",
+    nameHi: "धान / चावल (Rice)",
     season: "Kharif",
+    seasonHi: "खरीफ",
     icon: "🌾",
     description: "A staple cereal grain requiring warm temperatures and abundant water management.",
+    descriptionHi: "मानसून की प्रमुख फसल जिसे गर्म मौसम और भरपूर पानी की आवश्यकता होती है।",
     soil: "Clayey or heavy loamy soil with high moisture retention (pH 5.5 - 6.5)",
+    soilHi: "नमी धारण करने वाली चिकनी या भारी दोमट मिट्टी (pH 5.5 - 6.5)",
     duration: "105 - 150 days",
-    tips: "Puddle fields thoroughly before transplanting 20-25 day old seedlings; maintain shallow water depth."
+    durationHi: "105 - 150 दिन",
+    tips: "Puddle fields thoroughly before transplanting 20-25 day old seedlings; maintain shallow water depth.",
+    tipsHi: "20-25 दिन की पौध की रोपाई से पहले खेत की अच्छी तरह लेव (Puddling) लगाएं और पानी बनाए रखें।"
   },
   {
     name: "Tomato",
+    nameHi: "टमाटर (Tomato)",
     season: "Multiple",
+    seasonHi: "सभी मौसम",
     icon: "🍅",
     description: "A versatile, high-value solanaceous fruit vegetable grown across multiple seasons.",
+    descriptionHi: "एक बहुमूल्य सब्जी फसल, जिसे साल भर विभिन्न मौसमों में उगाया जा सकता है।",
     soil: "Deep, well-drained fertile loamy soil rich in organic matter (pH 6.0 - 7.0)",
+    soilHi: "जीवांश युक्त गहरी, उपजाऊ दोमट मिट्टी (pH 6.0 - 7.0)",
     duration: "70 - 90 days after transplanting",
-    tips: "Stake plants to keep fruits off the ground; avoid wetting leaves to prevent fungal leaf blights."
+    durationHi: "रोपाई के 70 - 90 दिन बाद",
+    tips: "Stake plants to keep fruits off the ground; avoid wetting leaves to prevent fungal leaf blights.",
+    tipsHi: "पौधों को सहारा (staking) दें ताकि फल जमीन से न छुएं; पत्ती झुलसा रोकने हेतु पत्तियों पर पानी न गिराएं।"
   },
   {
     name: "Potato",
+    nameHi: "आलू (Potato)",
     season: "Rabi",
+    seasonHi: "रबी",
     icon: "🥔",
     description: "A high-yielding tuber crop grown in cool conditions with loose friable soil.",
+    descriptionHi: "ठंडे मौसम की अधिक पैदावार देने वाली कंद वर्गीय फसल, जिसे भुरभुरी मिट्टी पसंद है।",
     soil: "Loose, well-aerated sandy loam with good drainage (pH 5.2 - 6.4)",
+    soilHi: "हल्की, भुरभुरी व हवादार बलुई दोमट मिट्टी (pH 5.2 - 6.4)",
     duration: "90 - 120 days",
-    tips: "Perform earthing-up around 30 days after sowing to protect growing tubers from sunlight."
+    durationHi: "90 - 120 दिन",
+    tips: "Perform earthing-up around 30 days after sowing to protect growing tubers from sunlight.",
+    tipsHi: "बुवाई के लगभग 30 दिन बाद मिट्टी चढ़ाएं ताकि बढ़ते कंदों पर धूप न लगे और वे हरे न हों।"
   },
   {
     name: "Maize",
+    nameHi: "मक्का (Maize)",
     season: "Kharif",
+    seasonHi: "खरीफ",
     icon: "🌽",
     description: "A multipurpose warm-season cereal crop used for human food, fodder, and starch.",
+    descriptionHi: "भोजन, पशु चारे और औद्योगिक उपयोग के लिए महत्वपूर्ण बहुउद्देशीय अनाज फसल।",
     soil: "Fertile, well-drained loamy soil (pH 6.5 - 7.5)",
+    soilHi: "उपजाऊ और अच्छे जल निकास वाली दोमट मिट्टी (pH 6.5 - 7.5)",
     duration: "85 - 110 days",
-    tips: "Sensitive to waterlogging; ensure proper field drainage and balanced nitrogen application."
+    durationHi: "85 - 110 दिन",
+    tips: "Sensitive to waterlogging; ensure proper field drainage and balanced nitrogen application.",
+    tipsHi: "खेत में जलभराव न होने दें; जल निकास की उचित व्यवस्था रखें और संतुलित नत्रजन खाद दें।"
   },
   {
     name: "Mustard",
+    nameHi: "सरसों (Mustard)",
     season: "Rabi",
+    seasonHi: "रबी",
     icon: "🌼",
     description: "A prominent winter oilseed crop requiring dry and cool growing conditions.",
+    descriptionHi: "सर्दियों की प्रमुख तिलहनी फसल जिसे ठंडे व शुष्क मौसम की आवश्यकता होती है।",
     soil: "Sandy loam to light loam soil with good drainage (pH 6.0 - 7.5)",
+    soilHi: "बलुई दोमट से हल्की दोमट मिट्टी (pH 6.0 - 7.5)",
     duration: "105 - 130 days",
-    tips: "Requires light irrigation during flowering and pod development; watch out for aphids in warm spells."
+    durationHi: "105 - 130 दिन",
+    tips: "Requires light irrigation during flowering and pod development; watch out for aphids in warm spells.",
+    tipsHi: "फूल आने और फलियां बनते समय हल्की सिंचाई करें; तापमान बढ़ने पर माहू (चेपा) कीट से सतर्क रहें।"
   }
 ];
 
 function Crops() {
+  const { isHindi, t } = useLanguage();
   const [cropList, setCropList] = useState(FALLBACK_CROPS);
   const [selectedCrop, setSelectedCrop] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -71,7 +109,6 @@ function Crops() {
       try {
         const data = await apiRequest("/api/crops");
         if (isMounted && Array.isArray(data) && data.length > 0) {
-          // Merge with detailed tips from fallback if database entries don't have them yet
           const merged = data.map((item) => {
             const fallback = FALLBACK_CROPS.find(
               (f) => f.name.toLowerCase() === item.name.toLowerCase()
@@ -84,7 +121,7 @@ function Crops() {
           setCropList(merged);
         }
       } catch {
-        // Retain fallback list on offline or server startup delay
+        // Retain fallback list on offline or server delay
       }
     }
 
@@ -94,24 +131,34 @@ function Crops() {
     };
   }, []);
 
-  const seasons = ["All", "Rabi", "Kharif", "Multiple"];
+  const seasons = [
+    { key: "All", labelEn: "All Crops", labelHi: "सभी फसलें" },
+    { key: "Rabi", labelEn: "Rabi (Winter)", labelHi: "रबी (सर्दियां)" },
+    { key: "Kharif", labelEn: "Kharif (Monsoon)", labelHi: "खरीफ (मानसून)" },
+    { key: "Multiple", labelEn: "All Seasons", labelHi: "सभी मौसम" },
+  ];
 
   const filteredCrops = cropList.filter((crop) => {
-    const matchesSearch =
-      crop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (crop.description && crop.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const nameMatch = isHindi
+      ? (crop.nameHi || crop.name).toLowerCase().includes(searchTerm.toLowerCase()) || crop.name.toLowerCase().includes(searchTerm.toLowerCase())
+      : crop.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const desc = isHindi ? (crop.descriptionHi || crop.description) : crop.description;
+    const matchesSearch = nameMatch || (desc && desc.toLowerCase().includes(searchTerm.toLowerCase()));
+
     const matchesSeason =
       selectedSeason === "All" || crop.season?.toLowerCase() === selectedSeason.toLowerCase();
+
     return matchesSearch && matchesSeason;
   });
 
   return (
     <section className="content-page">
       <div className="page-heading">
-        <p>CROP REPOSITORY & AGRONOMY</p>
-        <h1>Crop Guide & Cultivation</h1>
+        <p>{t("crops.badge", "CROP REPOSITORY & AGRONOMY")}</p>
+        <h1>{t("crops.title", "Crop Guide & Cultivation")}</h1>
         <span>
-          Explore agronomic requirements, recommended seasons, soils, and growth cycles for key crops.
+          {t("crops.subtitle", "Explore agronomic requirements, recommended seasons, soils, and growth cycles for key crops.")}
         </span>
       </div>
 
@@ -119,20 +166,20 @@ function Crops() {
         <input
           type="text"
           className="crop-search-input"
-          placeholder="🔍 Search crops by name or keyword..."
+          placeholder={isHindi ? "🔍 फसल का नाम, मौसम या मिट्टी खोजें..." : "🔍 Search crops by name, season, or soil..."}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
         <div className="season-filter-chips">
-          {seasons.map((season) => (
+          {seasons.map((s) => (
             <button
-              key={season}
+              key={s.key}
               type="button"
-              className={`season-chip ${selectedSeason === season ? "active" : ""}`}
-              onClick={() => setSelectedSeason(season)}
+              className={`season-chip ${selectedSeason === s.key ? "active" : ""}`}
+              onClick={() => setSelectedSeason(s.key)}
             >
-              {season} {season !== "All" && "Season"}
+              {isHindi ? s.labelHi : s.labelEn}
             </button>
           ))}
         </div>
@@ -143,20 +190,20 @@ function Crops() {
           <div key={crop.name} className="crop-card">
             <div className="crop-icon">{crop.icon || "🌱"}</div>
 
-            <h2>{crop.name}</h2>
+            <h2>{isHindi ? (crop.nameHi || crop.name) : crop.name}</h2>
 
             <p className="crop-season">
-              🗓️ Season: <strong>{crop.season || "General"}</strong>
+              🗓️ {isHindi ? "मौसम:" : "Season:"} <strong>{isHindi ? (crop.seasonHi || crop.season) : (crop.season || "General")}</strong>
             </p>
 
-            <p>{crop.description}</p>
+            <p>{isHindi ? (crop.descriptionHi || crop.description) : crop.description}</p>
 
             <button
               type="button"
               className="crop-details-btn"
               onClick={() => setSelectedCrop(crop)}
             >
-              View Full Guide →
+              {isHindi ? "सम्पूर्ण जानकारी देखें →" : "View Full Guide →"}
             </button>
           </div>
         ))}
@@ -164,7 +211,7 @@ function Crops() {
 
       {filteredCrops.length === 0 && (
         <div className="empty-scans" style={{ marginTop: "30px" }}>
-          <p>No crops matched your search filter.</p>
+          <p>{isHindi ? "आपकी खोज के अनुसार कोई फसल नहीं मिली।" : "No crops matched your search filter."}</p>
           <button
             type="button"
             className="secondary-btn"
@@ -174,7 +221,7 @@ function Crops() {
               setSelectedSeason("All");
             }}
           >
-            Clear Filters
+            {isHindi ? "फ़िल्टर हटाएं" : "Clear Filters"}
           </button>
         </div>
       )}
@@ -192,8 +239,10 @@ function Crops() {
               <div className="modal-title-group">
                 <span className="modal-crop-icon">{selectedCrop.icon || "🌱"}</span>
                 <div>
-                  <h2>{selectedCrop.name}</h2>
-                  <span className="season-tag">{selectedCrop.season} Season</span>
+                  <h2>{isHindi ? (selectedCrop.nameHi || selectedCrop.name) : selectedCrop.name}</h2>
+                  <span className="season-tag">
+                    {isHindi ? `${selectedCrop.seasonHi || selectedCrop.season} मौसम` : `${selectedCrop.season} Season`}
+                  </span>
                 </div>
               </div>
               <button
@@ -207,23 +256,25 @@ function Crops() {
             </div>
 
             <div className="modal-body">
-              <p className="crop-modal-desc">{selectedCrop.description}</p>
+              <p className="crop-modal-desc">
+                {isHindi ? (selectedCrop.descriptionHi || selectedCrop.description) : selectedCrop.description}
+              </p>
 
               <div className="crop-specs-grid">
                 <div className="spec-card">
-                  <strong>🌱 Soil Type</strong>
-                  <p>{selectedCrop.soil || "Well-drained fertile loam"}</p>
+                  <strong>🌱 {isHindi ? "उपयुक्त मिट्टी" : "Soil Type"}</strong>
+                  <p>{isHindi ? (selectedCrop.soilHi || selectedCrop.soil) : (selectedCrop.soil || "Well-drained fertile loam")}</p>
                 </div>
                 <div className="spec-card">
-                  <strong>⏳ Growth Duration</strong>
-                  <p>{selectedCrop.duration || "Standard seasonal duration"}</p>
+                  <strong>⏳ {isHindi ? "फसल अवधि" : "Growth Duration"}</strong>
+                  <p>{isHindi ? (selectedCrop.durationHi || selectedCrop.duration) : (selectedCrop.duration || "Standard seasonal duration")}</p>
                 </div>
               </div>
 
-              {selectedCrop.tips && (
+              {(selectedCrop.tips || selectedCrop.tipsHi) && (
                 <div className="cultivation-tips-box">
-                  <strong>💡 Best Cultivation Practices:</strong>
-                  <p>{selectedCrop.tips}</p>
+                  <strong>💡 {isHindi ? "उन्नत कृषि वैज्ञानिक सलाह:" : "Best Cultivation Practices:"}</strong>
+                  <p>{isHindi ? (selectedCrop.tipsHi || selectedCrop.tips) : selectedCrop.tips}</p>
                 </div>
               )}
 
@@ -233,14 +284,14 @@ function Crops() {
                   className="primary-btn"
                   onClick={() => setSelectedCrop(null)}
                 >
-                  📷 Scan {selectedCrop.name} For Disease
+                  📷 {isHindi ? `इस फसल (${isHindi ? (selectedCrop.nameHi || selectedCrop.name) : selectedCrop.name}) की पत्ती जांचें` : `Scan ${selectedCrop.name} For Disease`}
                 </Link>
                 <Link
                   to="/expert"
                   className="secondary-btn"
                   onClick={() => setSelectedCrop(null)}
                 >
-                  👨‍🌾 Ask Expert About {selectedCrop.name}
+                  👨‍🌾 {isHindi ? `विशेषज्ञ से सलाह लें` : `Ask Expert About ${selectedCrop.name}`}
                 </Link>
               </div>
             </div>

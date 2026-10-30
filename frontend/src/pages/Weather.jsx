@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 const POPULAR_FARMING_REGIONS = [
   "Prayagraj",
@@ -46,6 +47,7 @@ async function fetchLocationAndWeather(place) {
 }
 
 function Weather() {
+  const { isHindi, t } = useLanguage();
   const [searchCity, setSearchCity] = useState("Prayagraj");
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ function Weather() {
         }
       } catch (err) {
         if (!isCancelled) {
-          setError(err.message || "Unable to load initial weather data.");
+          setError(err.message || (isHindi ? "मौसम डेटा लोड करने में असमर्थ।" : "Unable to load initial weather data."));
         }
       } finally {
         if (!isCancelled) {
@@ -77,7 +79,7 @@ function Weather() {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [isHindi]);
 
   const handleQuery = async (place) => {
     if (!place || !place.trim()) return;
@@ -91,21 +93,21 @@ function Weather() {
         setWeather(data);
       }
     } catch (err) {
-      setError(err.message || "Unable to load weather.");
+      setError(err.message || (isHindi ? "मौसम जानकारी उपलब्ध नहीं है।" : "Unable to load weather."));
     } finally {
       setLoading(false);
     }
   };
 
   const weatherDescription = (code) => {
-    if (code === 0) return "Clear Sky";
-    if ([1, 2, 3].includes(code)) return "Partly Cloudy";
-    if ([45, 48].includes(code)) return "Foggy / Mist";
+    if (code === 0) return isHindi ? "साफ़ आसमान (Clear Sky)" : "Clear Sky";
+    if ([1, 2, 3].includes(code)) return isHindi ? "आंशिक रूप से बादल (Partly Cloudy)" : "Partly Cloudy";
+    if ([45, 48].includes(code)) return isHindi ? "कोहरा / धुंध (Foggy)" : "Foggy / Mist";
     if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code))
-      return "Rain / Showers";
-    if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
-    if ([95, 96, 99].includes(code)) return "Thunderstorm";
-    return "Current Conditions";
+      return isHindi ? "बारिश / फुहारें (Rain / Showers)" : "Rain / Showers";
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return isHindi ? "बर्फबारी (Snow)" : "Snow";
+    if ([95, 96, 99].includes(code)) return isHindi ? "आंधी व बिजली (Thunderstorm)" : "Thunderstorm";
+    return isHindi ? "सामान्य मौसम" : "Current Conditions";
   };
 
   const current = weather?.current;
@@ -121,10 +123,10 @@ function Weather() {
   return (
     <section className="content-page">
       <div className="page-heading">
-        <p>LIVE FARM WEATHER</p>
-        <h1>Weather Information</h1>
+        <p>{t("weather.badge", "LIVE FARM WEATHER")}</p>
+        <h1>{t("weather.title", "Weather Information")}</h1>
         <span>
-          Check current atmospheric conditions and rain probabilities for better irrigation and farm planning.
+          {t("weather.subtitle", "Check current atmospheric conditions and rain probabilities for better irrigation and farm planning.")}
         </span>
       </div>
 
@@ -138,7 +140,7 @@ function Weather() {
         <input
           value={searchCity}
           onChange={(e) => setSearchCity(e.target.value)}
-          placeholder="Enter city or district name (e.g. Prayagraj, Pune, Patna)"
+          placeholder={isHindi ? "शहर या जिले का नाम लिखें (उदा. प्रयागराज, पुणे, पटना)..." : "Enter city or district name (e.g. Prayagraj, Pune, Patna)"}
           className="weather-input"
         />
 
@@ -147,12 +149,12 @@ function Weather() {
           disabled={loading}
           className="weather-search-btn"
         >
-          {loading ? "Searching..." : "Check Weather"}
+          {loading ? (isHindi ? "खोज जारी..." : "Searching...") : (isHindi ? "मौसम देखें" : "Check Weather")}
         </button>
       </form>
 
       <div className="weather-quick-chips">
-        <span className="chips-label">Quick check:</span>
+        <span className="chips-label">{isHindi ? "त्वरित चयन:" : "Quick check:"}</span>
         {POPULAR_FARMING_REGIONS.map((region) => (
           <button
             key={region}
@@ -169,7 +171,9 @@ function Weather() {
       </div>
 
       {loading && (
-        <p className="weather-status-text">Fetching current meteorological data...</p>
+        <p className="weather-status-text">
+          {isHindi ? "स्थानीय मौसम डेटा प्राप्त किया जा रहा है..." : "Fetching current meteorological data..."}
+        </p>
       )}
 
       {error && (
@@ -193,40 +197,42 @@ function Weather() {
 
           <div className="weather-details">
             <div>
-              <strong>Feels Like</strong>
+              <strong>{isHindi ? "महसूस तापमान" : "Feels Like"}</strong>
               <span>{Math.round(current.apparent_temperature)}°C</span>
             </div>
 
             <div>
-              <strong>Humidity</strong>
+              <strong>{isHindi ? "हवा में नमी (आर्द्रता)" : "Humidity"}</strong>
               <span>{current.relative_humidity_2m}%</span>
             </div>
 
             <div>
-              <strong>Wind Speed</strong>
+              <strong>{isHindi ? "हवा की गति" : "Wind Speed"}</strong>
               <span>{current.wind_speed_10m} km/h</span>
             </div>
 
             <div>
-              <strong>Precipitation</strong>
+              <strong>{isHindi ? "वर्षा" : "Precipitation"}</strong>
               <span>{current.precipitation} mm</span>
             </div>
 
             <div>
-              <strong>Rain Probability</strong>
+              <strong>{isHindi ? "बारिश की संभावना" : "Rain Probability"}</strong>
               <span>
                 {rainProbability == null ? "0%" : `${rainProbability}%`}
               </span>
             </div>
 
             <div>
-              <strong>Condition Code</strong>
+              <strong>{isHindi ? "मौसम कोड" : "Condition Code"}</strong>
               <span>WMO #{current.weather_code}</span>
             </div>
           </div>
 
           <p className="weather-disclaimer">
-            Weather data is powered by Open-Meteo. Conditions can shift rapidly; always verify local atmospheric signs before pesticide or fertilizer application.
+            {isHindi
+              ? "मौसम डेटा Open-Meteo द्वारा संचालित है। खेत में कीटनाशक छिड़काव से पहले हमेशा स्थानीय वायुमंडलीय परिस्थितियों की पुष्टि करें।"
+              : "Weather data is powered by Open-Meteo. Conditions can shift rapidly; always verify local atmospheric signs before pesticide or fertilizer application."}
           </p>
         </div>
       )}

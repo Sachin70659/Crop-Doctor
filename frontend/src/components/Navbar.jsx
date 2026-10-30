@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { setLanguage, isHindi, t } = useLanguage();
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || null;
@@ -89,92 +91,117 @@ function Navbar() {
               </svg>
             </div>
             <div className="brand-text">
-              <span className="brand-title">Crop<span className="brand-accent">Doctor</span></span>
-              <span className="brand-tagline">AI Plant Health</span>
+              <span className="brand-title">{t("nav.brandTitle", "Crop")}<span className="brand-accent">{t("nav.brandAccent", "Doctor")}</span></span>
+              <span className="brand-tagline">{t("nav.brandTagline", "AI Plant Health")}</span>
             </div>
           </Link>
 
           {/* Desktop Nav Links */}
           <nav className="desktop-nav">
             <NavLink to="/" end className={navClass}>
-              Home
+              {t("nav.home", "Home")}
             </NavLink>
             <NavLink to="/scanner" className={navClass}>
               <span className="nav-badge-pill">AI</span>
-              Scanner
+              {t("nav.scanner", "Scanner")}
             </NavLink>
             <NavLink to="/crops" className={navClass}>
-              Crops
+              {t("nav.crops", "Crops")}
             </NavLink>
             <NavLink to="/diseases" className={navClass}>
-              Diseases
+              {t("nav.diseases", "Diseases")}
             </NavLink>
             <NavLink to="/weather" className={navClass}>
-              Weather
+              {t("nav.weather", "Weather")}
             </NavLink>
             <NavLink to="/expert" className={navClass}>
-              Expert
+              {t("nav.expert", "Expert")}
             </NavLink>
             <NavLink to="/shop" className={navClass}>
-              Shop
+              {t("nav.shop", "Shop")}
             </NavLink>
             {user && (
               <NavLink to="/dashboard" className={navClass}>
-                Dashboard
+                {t("nav.dashboard", "Dashboard")}
               </NavLink>
             )}
             <NavLink to="/admin" className={navClass}>
-              <span style={{ fontSize: "10px", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "6px", fontWeight: "800", marginRight: "4px" }}>Admin</span>
-              Portal
+              <span style={{ fontSize: "10px", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "6px", fontWeight: "800", marginRight: "4px" }}>
+                {t("nav.admin", "Admin")}
+              </span>
+              {t("nav.portal", "Portal")}
             </NavLink>
           </nav>
 
-          {/* User Actions */}
-          <div className="desktop-actions">
-            {user ? (
-              <div className="user-profile-menu">
-                <Link to="/dashboard" className="user-avatar-btn" title="View Dashboard">
-                  <span className="user-avatar-initials">
-                    {(user.name || user.email || "U").charAt(0).toUpperCase()}
-                  </span>
-                  <span className="user-display-name">{user.name?.split(" ")[0] || "Farmer"}</span>
-                </Link>
-                <button
-                  type="button"
-                  className="nav-btn-logout"
-                  onClick={handleLogout}
-                  title="Sign out"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <Link to="/login" className="nav-btn-login">
-                <span>Sign In</span>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </svg>
-              </Link>
-            )}
-          </div>
+          {/* Action Cluster (Language Switcher + Auth + Mobile Toggle) */}
+          <div className="navbar-actions-cluster">
+            {/* Language Switcher Pill */}
+            <div className="lang-switch-toggle" role="group" aria-label="Language selection">
+              <button
+                type="button"
+                className={`lang-option-btn ${!isHindi ? "active" : ""}`}
+                onClick={() => setLanguage("en")}
+                title="Switch to English"
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                className={`lang-option-btn ${isHindi ? "active" : ""}`}
+                onClick={() => setLanguage("hi")}
+                title="हिन्दी में बदलें"
+              >
+                हिन्दी
+              </button>
+            </div>
 
-          {/* Hamburger Mobile Toggle */}
-          <button
-            type="button"
-            className={`mobile-toggle-btn ${menuOpen ? "open" : ""}`}
-            onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label={menuOpen ? "Close menu" : "Open navigation menu"}
-            aria-expanded={menuOpen}
-          >
-            <span className="bar"></span>
-            <span className="bar"></span>
-            <span className="bar"></span>
-          </button>
+            {/* Desktop User Actions */}
+            <div className="desktop-actions">
+              {user ? (
+                <div className="user-profile-menu">
+                  <Link to="/dashboard" className="user-avatar-btn" title="View Dashboard">
+                    <span className="user-avatar-initials">
+                      {(user.name || user.email || "U").charAt(0).toUpperCase()}
+                    </span>
+                    <span className="user-display-name">{user.name?.split(" ")[0] || t("nav.farmer", "Farmer")}</span>
+                  </Link>
+                  <button
+                    type="button"
+                    className="nav-btn-logout"
+                    onClick={handleLogout}
+                    title={t("nav.signOut", "Sign Out")}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <Link to="/login" className="nav-btn-login">
+                  <span>{t("nav.signIn", "Sign In")}</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </Link>
+              )}
+            </div>
+
+            {/* Hamburger Mobile Toggle */}
+            <button
+              type="button"
+              className={`mobile-toggle-btn ${menuOpen ? "open" : ""}`}
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label={menuOpen ? t("nav.closeMenu", "Close menu") : t("nav.openMenu", "Open navigation menu")}
+              aria-expanded={menuOpen}
+            >
+              <span className="bar"></span>
+              <span className="bar"></span>
+              <span className="bar"></span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -194,57 +221,78 @@ function Navbar() {
                 <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
               </svg>
             </div>
-            <span className="brand-title">Crop<span className="brand-accent">Doctor</span></span>
+            <span className="brand-title">{t("nav.brandTitle", "Crop")}<span className="brand-accent">{t("nav.brandAccent", "Doctor")}</span></span>
           </div>
           <button
             type="button"
             className="mobile-close-btn"
             onClick={closeMenu}
-            aria-label="Close menu"
+            aria-label={t("nav.closeMenu", "Close menu")}
           >
             ✕
           </button>
         </div>
 
+        {/* Dedicated Mobile Language Switcher Row */}
+        <div className="mobile-lang-drawer-row">
+          <span className="mobile-lang-title">🌐 भाषा / Language:</span>
+          <div className="lang-switch-toggle" role="group" aria-label="Language selection">
+            <button
+              type="button"
+              className={`lang-option-btn ${!isHindi ? "active" : ""}`}
+              onClick={() => setLanguage("en")}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              className={`lang-option-btn ${isHindi ? "active" : ""}`}
+              onClick={() => setLanguage("hi")}
+            >
+              हिन्दी
+            </button>
+          </div>
+        </div>
+
         <nav className="mobile-nav-links">
           <NavLink to="/" end className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">🏠</span>
-            <span>Home</span>
+            <span>{t("nav.home", "Home")}</span>
           </NavLink>
           <NavLink to="/scanner" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">📷</span>
-            <span>AI Crop Scanner</span>
+            <span>{t("nav.scanner", "AI Crop Scanner")}</span>
             <span className="mobile-badge-new">AI</span>
           </NavLink>
           <NavLink to="/crops" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">🌱</span>
-            <span>Crop Encyclopedia</span>
+            <span>{t("nav.crops", "Crop Encyclopedia")}</span>
           </NavLink>
           <NavLink to="/diseases" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">🦠</span>
-            <span>Plant Diseases</span>
+            <span>{t("nav.diseases", "Plant Diseases")}</span>
           </NavLink>
           <NavLink to="/weather" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">🌦️</span>
-            <span>Farm Weather</span>
+            <span>{t("nav.weather", "Farm Weather")}</span>
           </NavLink>
           <NavLink to="/expert" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">👨‍🌾</span>
-            <span>Expert Agronomist</span>
+            <span>{t("nav.expert", "Expert Agronomist")}</span>
           </NavLink>
           <NavLink to="/shop" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">🛒</span>
-            <span>Farm Care Shop</span>
+            <span>{t("nav.shop", "Farm Care Shop")}</span>
           </NavLink>
           {user && (
             <NavLink to="/dashboard" className={mobileClass} onClick={closeMenu}>
               <span className="mobile-icon">📊</span>
-              <span>Farmer Dashboard</span>
+              <span>{t("nav.dashboard", "Farmer Dashboard")}</span>
             </NavLink>
           )}
           <NavLink to="/admin" className={mobileClass} onClick={closeMenu}>
             <span className="mobile-icon">🛡️</span>
-            <span>Admin Portal</span>
+            <span>{t("nav.admin", "Admin")} {t("nav.portal", "Portal")}</span>
             <span className="mobile-badge-new" style={{ background: "#fef3c7", color: "#92400e" }}>Admin</span>
           </NavLink>
         </nav>
@@ -257,7 +305,7 @@ function Navbar() {
                   {(user.name || user.email || "U").charAt(0).toUpperCase()}
                 </span>
                 <div>
-                  <p className="mobile-user-name">{user.name || "Farmer"}</p>
+                  <p className="mobile-user-name">{user.name || t("nav.farmer", "Farmer")}</p>
                   <p className="mobile-user-email">{user.email}</p>
                 </div>
               </div>
@@ -266,12 +314,12 @@ function Navbar() {
                 className="mobile-logout-action-btn"
                 onClick={handleLogout}
               >
-                Sign Out
+                {t("nav.signOut", "Sign Out")}
               </button>
             </div>
           ) : (
             <Link to="/login" className="mobile-login-action-btn" onClick={closeMenu}>
-              Sign In to Your Farm Account
+              {t("nav.farmerAccount", "Sign In to Your Farm Account")}
             </Link>
           )}
         </div>

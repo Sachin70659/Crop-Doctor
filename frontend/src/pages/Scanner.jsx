@@ -1,28 +1,31 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api";
+import { useLanguage } from "../context/LanguageContext";
 
 const CROP_OPTIONS = [
-  { value: "auto", label: "🔍 Auto-Detect Crop with AI (Recommended)" },
-  { value: "Mango", label: "🥭 Mango (Aam)" },
-  { value: "Tomato", label: "🍅 Tomato (Tamatar)" },
-  { value: "Rice", label: "🌾 Rice / Paddy (Dhan)" },
-  { value: "Wheat", label: "🌾 Wheat (Gehun)" },
-  { value: "Potato", label: "🥔 Potato (Aaloo)" },
-  { value: "Chilli", label: "🌶️ Chilli (Mirch)" },
-  { value: "Cotton", label: "🪴 Cotton (Kapas)" },
-  { value: "Sugarcane", label: "🎋 Sugarcane (Ganna)" },
-  { value: "Banana", label: "🍌 Banana (Kela)" },
-  { value: "Maize", label: "🌽 Maize / Corn (Makka)" },
-  { value: "Mustard", label: "🌼 Mustard (Sarson)" },
-  { value: "Apple", label: "🍏 Apple (Seb)" },
-  { value: "Guava", label: "🍈 Guava (Amrood)" },
-  { value: "Papaya", label: "🍈 Papaya (Papita)" },
-  { value: "Onion", label: "🧅 Onion (Pyaz)" },
-  { value: "Other", label: "🌿 Other Crop / Plant" }
+  { value: "auto", labelEn: "🔍 Auto-Detect Crop with AI (Recommended)", labelHi: "🔍 एआई द्वारा फसल स्वयं पहचानें (अनुशंसित)" },
+  { value: "Mango", labelEn: "🥭 Mango (Aam)", labelHi: "🥭 आम (Mango)" },
+  { value: "Tomato", labelEn: "🍅 Tomato (Tamatar)", labelHi: "🍅 टमाटर (Tomato)" },
+  { value: "Rice", labelEn: "🌾 Rice / Paddy (Dhan)", labelHi: "🌾 धान / चावल (Paddy)" },
+  { value: "Wheat", labelEn: "🌾 Wheat (Gehun)", labelHi: "🌾 गेहूं (Wheat)" },
+  { value: "Potato", labelEn: "🥔 Potato (Aaloo)", labelHi: "🥔 आलू (Potato)" },
+  { value: "Chilli", labelEn: "🌶️ Chilli (Mirch)", labelHi: "🌶️ मिर्च (Chilli)" },
+  { value: "Cotton", labelEn: "🪴 Cotton (Kapas)", labelHi: "🪴 कपास (Cotton)" },
+  { value: "Sugarcane", labelEn: "🎋 Sugarcane (Ganna)", labelHi: "🎋 गन्ना (Sugarcane)" },
+  { value: "Banana", labelEn: "🍌 Banana (Kela)", labelHi: "🍌 केला (Banana)" },
+  { value: "Maize", labelEn: "🌽 Maize / Corn (Makka)", labelHi: "🌽 मक्का (Maize)" },
+  { value: "Mustard", labelEn: "🌼 Mustard (Sarson)", labelHi: "🌼 सरसों (Mustard)" },
+  { value: "Apple", labelEn: "🍏 Apple (Seb)", labelHi: "🍏 सेब (Apple)" },
+  { value: "Guava", labelEn: "🍈 Guava (Amrood)", labelHi: "🍈 अमरूद (Guava)" },
+  { value: "Papaya", labelEn: "🍈 Papaya (Papita)", labelHi: "🍈 पपीता (Papaya)" },
+  { value: "Onion", labelEn: "🧅 Onion (Pyaz)", labelHi: "🧅 प्याज (Onion)" },
+  { value: "Other", labelEn: "🌿 Other Crop / Plant", labelHi: "🌿 अन्य फसल / पौधा" }
 ];
 
 function Scanner() {
+  const { language, isHindi, t } = useLanguage();
+
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [selectedCrop, setSelectedCrop] = useState("auto");
@@ -71,11 +74,11 @@ function Scanner() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setError("Please select a valid image file (JPG, PNG, or WebP).");
+      setError(isHindi ? "कृपया मान्य फ़ोटो फ़ाइल (JPG, PNG, या WebP) चुनें।" : "Please select a valid image file (JPG, PNG, or WebP).");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setError("Image size must be smaller than 10 MB.");
+      setError(isHindi ? "फ़ोटो का आकार 10 MB से कम होना चाहिए।" : "Image size must be smaller than 10 MB.");
       return;
     }
     if (preview) {
@@ -121,10 +124,6 @@ function Scanner() {
     }
 
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Direct camera is not supported in this browser.");
-      }
-
       const constraints = {
         video: {
           facingMode: { ideal: facing },
@@ -143,14 +142,23 @@ function Scanner() {
       }
       setCameraLoading(false);
     } catch (err) {
-      console.warn("Direct webcam failed, falling back to native camera:", err.message);
-      setCameraLoading(false);
-      // If user denied camera permission or browser doesn't allow webcam, trigger native device camera
-      if (nativeCameraInputRef.current) {
-        nativeCameraInputRef.current.click();
-        setIsCameraActive(false);
-      } else {
-        setCameraError(err.message || "Could not access device camera.");
+      console.warn("Direct camera access failed, trying fallback:", err);
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        streamRef.current = fallbackStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+          await videoRef.current.play();
+        }
+        setCameraLoading(false);
+      } catch (fallbackErr) {
+        console.error("Camera permission or hardware error:", fallbackErr);
+        setCameraLoading(false);
+        setCameraError(
+          isHindi
+            ? "कैमरा खोलने में असमर्थ। कृपया ब्राउज़र सेटिंग्स में कैमरा अनुमति दें।"
+            : "Camera permission denied or camera unavailable. Please grant permission or upload from gallery."
+        );
       }
     }
   };
@@ -200,7 +208,7 @@ function Scanner() {
       );
     } catch (err) {
       console.error("Failed to capture snapshot:", err);
-      setError("Failed to capture snapshot from camera.");
+      setError(isHindi ? "कैमरे से फ़ोटो लेने में समस्या आई।" : "Failed to capture snapshot from camera.");
       stopCamera();
     }
   };
@@ -215,12 +223,20 @@ function Scanner() {
 
   const handleAnalyze = async () => {
     if (!token) {
-      setError("Please log in first to diagnose crops and save scan records to your dashboard.");
+      setError(
+        isHindi
+          ? "फसल रोग निदान और परिणाम सहेजने के लिए कृपया पहले लॉगिन करें।"
+          : "Please log in first to diagnose crops and save scan records to your dashboard."
+      );
       return;
     }
 
     if (!image) {
-      setError("Please select or capture a crop leaf image before analyzing.");
+      setError(
+        isHindi
+          ? "कृपया पहले पौधे की पत्ती की फ़ोटो चुनें या कैमरे से खींचें।"
+          : "Please select or capture a crop leaf image before analyzing."
+      );
       return;
     }
 
@@ -231,6 +247,7 @@ function Scanner() {
     try {
       const form = new FormData();
       form.append("image", image);
+      form.append("language", language);
 
       const effectiveCrop = selectedCrop === "Other" && customCrop.trim()
         ? customCrop.trim()
@@ -247,7 +264,7 @@ function Scanner() {
 
       setResult(data);
     } catch (err) {
-      setError(err.message || "Could not analyze the crop image. Please verify backend connection.");
+      setError(err.message || (isHindi ? "फ़ोटो की जांच पूरी नहीं हो सकी। कृपया पुनः प्रयास करें।" : "Could not analyze the crop image. Please verify backend connection."));
     } finally {
       setLoading(false);
     }
@@ -256,17 +273,18 @@ function Scanner() {
   return (
     <section className="scanner-page">
       <div className="page-heading">
-        <p>AI VISION CROP DIAGNOSIS</p>
-        <h1>Crop Disease Scanner</h1>
+        <p>{t("scanner.badge", "AI COMPUTER VISION")}</p>
+        <h1>{t("scanner.title", "AI Crop Disease Scanner")}</h1>
         <span>
-          Click a live photo or upload a picture of an affected plant leaf to detect exact plant species, diagnose diseases, and view certified agronomic cure protocols.
+          {t("scanner.subtitle", "Upload or capture a photo of an unhealthy leaf to detect diseases, get treatment protocols, and prevent harvest loss.")}
         </span>
       </div>
 
       {!token && (
         <div className="auth-alert-banner">
-          <span>ℹ️ You are browsing in guest mode. </span>
-          <Link to="/login">Log in or create an account</Link> to run scans and view diagnosis history.
+          <span>{isHindi ? "ℹ️ आप अतिथि (Guest) मोड में हैं। " : "ℹ️ You are browsing in guest mode. "}</span>
+          <Link to="/login">{isHindi ? "लॉगिन करें या नया खाता बनाएं" : "Log in or create an account"}</Link>{" "}
+          {isHindi ? "ताकि आप फसल जांच सकें और इतिहास देख सकें।" : "to run scans and view diagnosis history."}
         </div>
       )}
 
@@ -293,7 +311,7 @@ function Scanner() {
           color: "#0f2e1b",
           marginBottom: "8px"
         }}>
-          🌱 Specify Crop / Plant (Optional):
+          🌱 {t("scanner.selectCropLabel", "Select Crop (Optional)")}:
         </label>
         <select
           id="cropSelect"
@@ -314,7 +332,7 @@ function Scanner() {
         >
           {CROP_OPTIONS.map((c) => (
             <option key={c.value} value={c.value}>
-              {c.label}
+              {isHindi ? c.labelHi : c.labelEn}
             </option>
           ))}
         </select>
@@ -322,7 +340,7 @@ function Scanner() {
         {selectedCrop === "Other" && (
           <input
             type="text"
-            placeholder="Enter crop name (e.g. Mustard, Guava, Papaya)..."
+            placeholder={isHindi ? "फसल का नाम लिखें (उदा. सरसों, अमरूद, पपीता)..." : "Enter crop name (e.g. Mustard, Guava, Papaya)..."}
             value={customCrop}
             onChange={(e) => setCustomCrop(e.target.value)}
             style={{
@@ -348,8 +366,8 @@ function Scanner() {
           {!preview ? (
             <>
               <div className="upload-icon">📷</div>
-              <h2>Scan Your Crop Leaf</h2>
-              <p>Choose an option below to click a live photo or upload an existing image</p>
+              <h2>{isHindi ? "फसल की पत्ती स्कैन करें" : "Scan Your Crop Leaf"}</h2>
+              <p>{isHindi ? "लाइव कैमरा से फोटो खींचें या गैलरी से फ़ोटो चुनें" : "Choose an option below to click a live photo or upload an existing image"}</p>
 
               {/* DUAL ACTION BUTTONS: DIRECT CAMERA SNAP & GALLERY PICK */}
               <div className="crop-photo-action-buttons">
@@ -357,20 +375,20 @@ function Scanner() {
                   type="button"
                   className="crop-direct-camera-btn"
                   onClick={() => startCamera("environment")}
-                  title="Open camera to click crop leaf photo directly"
+                  title={isHindi ? "सीधे कैमरे से पत्ती की फ़ोटो लें" : "Open camera to click crop leaf photo directly"}
                 >
                   <span className="btn-snap-icon">📸</span>
                   <div className="btn-snap-text">
-                    <span className="primary-label">Click Photo with Camera</span>
-                    <span className="secondary-label">सीधे कैमरा से फ़ोटो खींचें</span>
+                    <span className="primary-label">{isHindi ? "सीधे कैमरा से फ़ोटो खींचें" : "Click Photo with Camera"}</span>
+                    <span className="secondary-label">{isHindi ? "Open Live Camera" : "सीधे कैमरा से फ़ोटो खींचें"}</span>
                   </div>
                 </button>
 
-                <label className="crop-gallery-pick-btn" title="Choose from gallery or files">
+                <label className="crop-gallery-pick-btn" title={isHindi ? "गैलरी या स्टोरेज से फ़ोटो चुनें" : "Choose from gallery or files"}>
                   <span className="btn-snap-icon">📁</span>
                   <div className="btn-snap-text">
-                    <span className="primary-label">Upload from Files</span>
-                    <span className="secondary-label">गैलरी या स्टोरेज से चुनें</span>
+                    <span className="primary-label">{isHindi ? "फ़ाइल या गैलरी से चुनें" : "Upload from Files"}</span>
+                    <span className="secondary-label">{isHindi ? "Choose from Gallery" : "गैलरी या स्टोरेज से चुनें"}</span>
                   </div>
                   <input
                     type="file"
@@ -392,7 +410,12 @@ function Scanner() {
               />
 
               <div className="upload-leaf-guideline">
-                <span>💡 <strong>Tip for Farmers:</strong> Hold camera 10–15 cm from the affected leaf under natural daylight for best accuracy.</span>
+                <span>
+                  💡 <strong>{isHindi ? "किसानों के लिए सुझाव:" : "Tip for Farmers:"}</strong>{" "}
+                  {isHindi
+                    ? "सटीक परिणाम के लिए कैमरे को प्रभावित पत्ती से 10–15 सेमी दूर दिन की रोशनी में रखें।"
+                    : "Hold camera 10–15 cm from the affected leaf under natural daylight for best accuracy."}
+                </span>
               </div>
             </>
           ) : (
@@ -403,7 +426,7 @@ function Scanner() {
                   alt="Crop leaf preview"
                   className="crop-preview"
                 />
-                <div className="preview-image-badge">✅ Leaf Photo Ready</div>
+                <div className="preview-image-badge">{isHindi ? "✅ पत्ती की फ़ोटो तैयार है" : "✅ Leaf Photo Ready"}</div>
               </div>
 
               <div className="upload-preview-actions">
@@ -411,13 +434,13 @@ function Scanner() {
                   type="button"
                   className="camera-reclick-btn"
                   onClick={() => startCamera("environment")}
-                  title="Take another live camera shot"
+                  title={isHindi ? "दोबारा कैमरा से फ़ोटो लें" : "Take another live camera shot"}
                 >
-                  📸 Re-click Photo
+                  📸 {isHindi ? "दोबारा फ़ोटो लें" : "Re-click Photo"}
                 </button>
 
-                <label className="change-btn" title="Choose a different image file">
-                  📁 Pick File
+                <label className="change-btn" title={isHindi ? "दूसरी फ़ोटो चुनें" : "Choose a different image file"}>
+                  📁 {isHindi ? "फ़ोटो बदलें" : "Pick File"}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -430,9 +453,9 @@ function Scanner() {
                   type="button"
                   className="remove-btn"
                   onClick={clearSelection}
-                  title="Remove image"
+                  title={isHindi ? "हटाएं" : "Remove image"}
                 >
-                  ✕ Clear
+                  ✕ {isHindi ? "हटाएं" : "Clear"}
                 </button>
               </div>
             </>
@@ -441,14 +464,14 @@ function Scanner() {
 
         {/* Diagnosis Column */}
         <div className="analysis-box">
-          <h2>🔬 Diagnosis & Treatment Protocol</h2>
+          <h2>🔬 {isHindi ? "रोग निदान एवं उपचार नुस्खा" : "Diagnosis & Treatment Protocol"}</h2>
 
           {loading && (
             <div className="result-placeholder">
               <span style={{ fontSize: "50px", display: "block", marginBottom: "14px" }}>🔬</span>
-              <p><strong>Analyzing leaf pathology and morphology...</strong></p>
+              <p><strong>{isHindi ? "पत्ती के लक्षणों और रोग का विश्लेषण हो रहा है..." : "Analyzing leaf pathology and morphology..."}</strong></p>
               <p style={{ fontSize: "13px", marginTop: "8px", color: "#64748b" }}>
-                Inspecting leaf texture, chlorosis borders, and lesion patterns with AI...
+                {isHindi ? "एआई विज़न इंजन द्वारा धब्बों, फफूंद और रंग के बदलाव की जांच जारी है..." : "Inspecting leaf texture, chlorosis borders, and lesion patterns with AI..."}
               </p>
             </div>
           )}
@@ -456,9 +479,11 @@ function Scanner() {
           {!loading && !result && (
             <div className="result-placeholder">
               <span style={{ fontSize: "50px", display: "block", marginBottom: "14px" }}>🌿</span>
-              <p><strong>Your crop diagnosis will appear here.</strong></p>
+              <p><strong>{isHindi ? "फसल रोग का परिणाम यहाँ दिखाई देगा।" : "Your crop diagnosis will appear here."}</strong></p>
               <p style={{ fontSize: "13px", marginTop: "8px", color: "#64748b" }}>
-                Click a photo or select an image on the left, then tap &quot;Analyze Crop Leaf Now&quot;.
+                {isHindi
+                  ? "बाईं ओर पत्ती की फ़ोटो खींचें या चुनें, फिर नीचे दिए गए 'एआई रोग परीक्षण शुरू करें' बटन पर क्लिक करें।"
+                  : "Click a photo or select an image on the left, then tap \"Run AI Disease Diagnosis\"."}
               </p>
             </div>
           )}
@@ -467,7 +492,7 @@ function Scanner() {
             <div className="result-box">
               <div className="result-header-row">
                 <div>
-                  <span className="result-crop-label">Identified Crop: {result.crop}</span>
+                  <span className="result-crop-label">{isHindi ? "पहचानी गई फसल:" : "Identified Crop:"} {result.crop}</span>
                   <h3>{result.disease}</h3>
                 </div>
                 <div className="result-badges">
@@ -483,7 +508,7 @@ function Scanner() {
                       result.confidence >= 60 ? "high" : "low"
                     }`}
                   >
-                    {result.confidence}% Match
+                    {result.confidence}% {isHindi ? "सटीकता" : "Match"}
                   </span>
                 </div>
               </div>
@@ -496,7 +521,7 @@ function Scanner() {
 
               {result.symptoms && result.symptoms.length > 0 && (
                 <div className="result-section symptoms">
-                  <strong>🔍 Detected Symptoms:</strong>
+                  <strong>🔍 {isHindi ? "देखे गए मुख्य लक्षण:" : "Detected Symptoms:"}</strong>
                   <ul>
                     {result.symptoms.map((s, i) => (
                       <li key={i}>{s}</li>
@@ -507,7 +532,7 @@ function Scanner() {
 
               {result.precautions && result.precautions.length > 0 && (
                 <div className="result-section precautions">
-                  <strong>⚠️ Immediate Urgent Precautions:</strong>
+                  <strong>⚠️ {isHindi ? "तत्काल आवश्यक सावधानियां:" : "Immediate Urgent Precautions:"}</strong>
                   <ul>
                     {result.precautions.map((p, i) => (
                       <li key={i}>{p}</li>
@@ -518,7 +543,7 @@ function Scanner() {
 
               {result.treatment && result.treatment.length > 0 && (
                 <div className="result-section treatment" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                  <strong style={{ color: "#15803d" }}>💊 Chemical / Organic Treatment:</strong>
+                  <strong style={{ color: "#15803d" }}>💊 {isHindi ? "रासायनिक एवं जैविक उपचार (दवाइयां):" : "Chemical / Organic Treatment:"}</strong>
                   <ul>
                     {result.treatment.map((t, i) => (
                       <li key={i}>{t}</li>
@@ -529,7 +554,7 @@ function Scanner() {
 
               {result.prevention && result.prevention.length > 0 && (
                 <div className="result-section prevention">
-                  <strong>🛡️ Long-term Field Prevention:</strong>
+                  <strong>🛡️ {isHindi ? "भविष्य में खेत की रोकथाम:" : "Long-term Field Prevention:"}</strong>
                   <ul>
                     {result.prevention.map((pv, i) => (
                       <li key={i}>{pv}</li>
@@ -548,8 +573,8 @@ function Scanner() {
                   justifyContent: "space-between",
                   alignItems: "center"
                 }}>
-                  <span>Diagnostic Engine: <strong>{result.analysedBy}</strong></span>
-                  {result.isLiveAi && <span style={{ color: "#15803d", fontWeight: "700" }}>● Live AI Vision</span>}
+                  <span>{isHindi ? "जांच तकनीक:" : "Diagnostic Engine:"} <strong>{result.analysedBy}</strong></span>
+                  {result.isLiveAi && <span style={{ color: "#15803d", fontWeight: "700" }}>● {isHindi ? "लाइव एआई विज़न" : "Live AI Vision"}</span>}
                 </div>
               )}
             </div>
@@ -564,7 +589,9 @@ function Scanner() {
           onClick={handleAnalyze}
           disabled={loading || !image}
         >
-          {loading ? "Analyzing Leaf with AI..." : "🔬 Analyze Crop Leaf Now"}
+          {loading
+            ? (isHindi ? "एआई मॉडल द्वारा पत्ती की जांच हो रही है..." : "Analyzing Leaf with AI...")
+            : (isHindi ? "🔬 एआई रोग परीक्षण शुरू करें" : "🔬 Run AI Disease Diagnosis")}
         </button>
       </div>
 
@@ -575,22 +602,22 @@ function Scanner() {
             <div className="camera-modal-header">
               <div className="camera-modal-title">
                 <span className="rec-dot"></span>
-                <span>Live Crop Camera</span>
+                <span>{isHindi ? "लाइव कैमरा" : "Live Crop Camera"}</span>
               </div>
               <div className="camera-header-actions">
                 <button
                   type="button"
                   className="camera-flip-btn"
                   onClick={toggleFacing}
-                  title="Switch Front/Rear Camera"
+                  title={isHindi ? "कैमरा बदलें" : "Switch Front/Rear Camera"}
                 >
-                  🔄 Flip
+                  🔄 {isHindi ? "बदलें" : "Flip"}
                 </button>
                 <button
                   type="button"
                   className="camera-close-btn"
                   onClick={stopCamera}
-                  title="Close Camera"
+                  title={isHindi ? "कैमरा बंद करें" : "Close Camera"}
                 >
                   ✕
                 </button>
@@ -600,7 +627,7 @@ function Scanner() {
             <div className="camera-viewfinder-container">
               {cameraLoading && (
                 <div className="camera-loading-overlay">
-                  <span>⏳ Starting camera feed...</span>
+                  <span>⏳ {isHindi ? "कैमरा शुरू हो रहा है..." : "Starting camera feed..."}</span>
                 </div>
               )}
 
@@ -612,7 +639,7 @@ function Scanner() {
                     className="camera-retry-btn"
                     onClick={() => nativeCameraInputRef.current?.click()}
                   >
-                    Open Device Camera Directly
+                    {isHindi ? "डिवाइस कैमरा सीधे खोलें" : "Open Device Camera Directly"}
                   </button>
                 </div>
               )}
@@ -630,7 +657,7 @@ function Scanner() {
                 <div className="reticle-corner top-right"></div>
                 <div className="reticle-corner bottom-left"></div>
                 <div className="reticle-corner bottom-right"></div>
-                <span className="reticle-label">🌱 Align Affected Leaf Here</span>
+                <span className="reticle-label">{isHindi ? "🌱 प्रभावित पत्ती को यहाँ लाएं" : "🌱 Align Affected Leaf Here"}</span>
               </div>
             </div>
 
@@ -640,7 +667,7 @@ function Scanner() {
                 className="camera-cancel-text-btn"
                 onClick={stopCamera}
               >
-                Cancel
+                {isHindi ? "रद्द करें" : "Cancel"}
               </button>
 
               <button
@@ -648,7 +675,7 @@ function Scanner() {
                 className="camera-shutter-btn"
                 onClick={capturePhoto}
                 disabled={cameraLoading}
-                title="Click Photo"
+                title={isHindi ? "फ़ोटो खींचें" : "Click Photo"}
               >
                 <div className="shutter-inner-circle"></div>
               </button>
@@ -657,7 +684,7 @@ function Scanner() {
                 type="button"
                 className="camera-switch-mobile-btn"
                 onClick={toggleFacing}
-                title="Switch Camera"
+                title={isHindi ? "कैमरा बदलें" : "Switch Camera"}
               >
                 🔄
               </button>

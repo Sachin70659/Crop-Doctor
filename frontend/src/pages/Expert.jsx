@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api";
+import { useLanguage } from "../context/LanguageContext";
 
 function Expert() {
+  const { isHindi, t } = useLanguage();
+
   const storedUser = (() => {
     try {
       const u = localStorage.getItem("user");
@@ -64,7 +67,7 @@ function Expert() {
     e.preventDefault();
 
     if (!token) {
-      setError("Please log in before submitting your agricultural problem.");
+      setError(isHindi ? "समस्या भेजने से पहले कृपया लॉगिन करें।" : "Please log in before submitting your agricultural problem.");
       return;
     }
 
@@ -78,11 +81,16 @@ function Expert() {
         body: JSON.stringify({ name, crop, problem }),
       });
 
-      setMessage(res.message || "Your inquiry has been submitted to our agricultural specialists.");
+      setMessage(
+        res.message ||
+        (isHindi
+          ? "आपकी समस्या कृषि विशेषज्ञों को सफलतापूर्वक भेज दी गई है।"
+          : "Your inquiry has been submitted to our agricultural specialists.")
+      );
       setProblem("");
       refreshRequests();
     } catch (err) {
-      setError(err.message || "Could not submit your consultation request.");
+      setError(err.message || (isHindi ? "समस्या भेजने में असमर्थ।" : "Could not submit your consultation request."));
     } finally {
       setLoading(false);
     }
@@ -91,27 +99,28 @@ function Expert() {
   return (
     <section className="content-page">
       <div className="page-heading">
-        <p>AGRICULTURE SUPPORT</p>
-        <h1>Ask an Agricultural Expert</h1>
+        <p>{t("expert.badge", "AGRICULTURE SUPPORT")}</p>
+        <h1>{t("expert.title", "Ask an Agricultural Expert")}</h1>
         <span>
-          Describe your crop symptoms or soil issues and receive tailored scientific guidance.
+          {t("expert.subtitle", "Describe your crop symptoms or soil issues and receive tailored scientific guidance.")}
         </span>
       </div>
 
       {!token && (
         <div className="auth-alert-banner" style={{ maxWidth: "650px", margin: "0 auto 25px auto" }}>
-          <span>ℹ️ You are browsing in guest mode. </span>
-          <Link to="/login">Log in to your account</Link> to submit problems and receive responses.
+          <span>{isHindi ? "ℹ️ आप अतिथि (Guest) मोड में हैं। " : "ℹ️ You are browsing in guest mode. "}</span>
+          <Link to="/login">{isHindi ? "अपने खाते में लॉगिन करें" : "Log in to your account"}</Link>{" "}
+          {isHindi ? "ताकि आप समस्या भेज सकें और विशेषज्ञों का उत्तर प्राप्त कर सकें।" : "to submit problems and receive responses."}
         </div>
       )}
 
       <form className="expert-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="expert-name">Your Full Name</label>
+          <label htmlFor="expert-name">{isHindi ? "आपका पूरा नाम" : "Your Full Name"}</label>
           <input
             id="expert-name"
             type="text"
-            placeholder="Enter your name"
+            placeholder={isHindi ? "अपना नाम लिखें" : "Enter your name"}
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -119,11 +128,11 @@ function Expert() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="expert-crop">Crop Name / Variety</label>
+          <label htmlFor="expert-crop">{isHindi ? "फसल / किस्म का नाम" : "Crop Name / Variety"}</label>
           <input
             id="expert-crop"
             type="text"
-            placeholder="e.g. Wheat (PBW 343), Tomato (Hybrid), Rice (Basmati)"
+            placeholder={isHindi ? "उदा. गेहूं (PBW 343), टमाटर (संकर), धान (बासमती)" : "e.g. Wheat (PBW 343), Tomato (Hybrid), Rice (Basmati)"}
             value={crop}
             onChange={(e) => setCrop(e.target.value)}
             required
@@ -131,10 +140,10 @@ function Expert() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="expert-problem">Problem Description & Symptoms</label>
+          <label htmlFor="expert-problem">{isHindi ? "समस्या व लक्षणों का विवरण" : "Problem Description & Symptoms"}</label>
           <textarea
             id="expert-problem"
-            placeholder="Describe what you notice: leaf discoloration, stunted growth, wilting, soil condition, or pest attack..."
+            placeholder={isHindi ? "पत्तियों के धब्बे, पौधा सूखना, कीड़ों का हमला, या मिट्टी के बारे में बताएं..." : "Describe what you notice: leaf discoloration, stunted growth, wilting, soil condition, or pest attack..."}
             rows={5}
             value={problem}
             onChange={(e) => setProblem(e.target.value)}
@@ -143,7 +152,9 @@ function Expert() {
         </div>
 
         <button type="submit" disabled={loading} className="primary-btn" style={{ width: "100%", border: "none" }}>
-          {loading ? "Submitting Inquiry..." : "✉️ Submit Problem to Expert"}
+          {loading
+            ? (isHindi ? "समस्या भेजी जा रही है..." : "Submitting Inquiry...")
+            : (isHindi ? "✉️ कृषि विशेषज्ञ को भेजें" : "✉️ Submit Problem to Expert")}
         </button>
 
         {message && (
@@ -162,19 +173,21 @@ function Expert() {
       {token && (
         <div className="expert-history-container">
           <div className="expert-history-header">
-            <h2>Your Expert Inquiries ({pastRequests.length})</h2>
+            <h2>{isHindi ? `आपकी भेजी गई समस्याएं (${pastRequests.length})` : `Your Expert Inquiries (${pastRequests.length})`}</h2>
             <button
               type="button"
               className="refresh-btn"
               onClick={refreshRequests}
               disabled={loadingHistory}
             >
-              🔄 {loadingHistory ? "Refreshing..." : "Refresh"}
+              🔄 {loadingHistory ? (isHindi ? "अपडेट हो रहा है..." : "Refreshing...") : (isHindi ? "रिफ्रेश करें" : "Refresh")}
             </button>
           </div>
 
           {pastRequests.length === 0 ? (
-            <p className="no-inquiries-text">You haven't submitted any expert inquiries yet.</p>
+            <p className="no-inquiries-text">
+              {isHindi ? "आपने अभी तक कोई समस्या नहीं भेजी है।" : "You haven't submitted any expert inquiries yet."}
+            </p>
           ) : (
             <div className="inquiries-list">
               {pastRequests.map((req) => (
@@ -194,11 +207,11 @@ function Expert() {
                     </div>
                     <span className={`status-pill ${req.status || "pending"}`}>
                       {req.status === "completed" || req.status === "resolved"
-                        ? "Resolved"
-                        : "Review Pending"}
+                        ? (isHindi ? "समाधान प्राप्त" : "Resolved")
+                        : (isHindi ? "विशेषज्ञ समीक्षा जारी" : "Review Pending")}
                     </span>
                   </div>
-                  <p className="inquiry-problem">"{req.problem}"</p>
+                  <p className="inquiry-problem">&quot;{req.problem}&quot;</p>
                 </div>
               ))}
             </div>

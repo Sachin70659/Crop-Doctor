@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 
 function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="footer-wrapper">
       <div className="footer-top-container">
@@ -13,33 +16,33 @@ function Footer() {
                 <path d="M12 12v10" />
               </svg>
             </div>
-            <span className="brand-title">Crop<span className="brand-accent">Doctor</span></span>
+            <span className="brand-title">{t("nav.brandTitle", "Crop")}<span className="brand-accent">{t("nav.brandAccent", "Doctor")}</span></span>
           </Link>
           <p className="footer-brand-bio">
-            Empowering Indian cultivators with real-time AI computer vision plant diagnostics, weather-guided spraying windows, and agricultural extension advice.
+            {t("footer.bio", "Empowering Indian cultivators with real-time AI computer vision plant diagnostics, weather-guided spraying windows, and agricultural extension advice.")}
           </p>
           <div className="system-status-indicator">
             <span className="status-dot"></span>
-            <span className="status-text">Gemini Vision AI Engine: Operational</span>
+            <span className="status-text">{t("footer.aiEngineStatus", "Gemini Vision AI Engine: Operational")}</span>
           </div>
         </div>
 
         {/* Col 2: Agricultural Tools */}
         <div className="footer-col">
-          <h4 className="footer-heading">Diagnostic Tools</h4>
+          <h4 className="footer-heading">{t("footer.diagnosticTools", "Diagnostic Tools")}</h4>
           <ul className="footer-links-list">
-            <li><Link to="/scanner">📷 AI Crop Scanner</Link></li>
-            <li><Link to="/crops">🌱 Crop Encyclopedia</Link></li>
-            <li><Link to="/diseases">🦠 Plant Diseases Library</Link></li>
-            <li><Link to="/weather">🌦️ Live Farm Weather</Link></li>
-            <li><Link to="/expert">👨‍🌾 Expert Agronomist</Link></li>
-            <li><Link to="/shop">🛒 Farm Care Store</Link></li>
+            <li><Link to="/scanner">{t("footer.scannerLink", "📷 AI Crop Scanner")}</Link></li>
+            <li><Link to="/crops">{t("footer.cropsLink", "🌱 Crop Encyclopedia")}</Link></li>
+            <li><Link to="/diseases">{t("footer.diseasesLink", "🦠 Plant Diseases Library")}</Link></li>
+            <li><Link to="/weather">{t("footer.weatherLink", "🌦️ Live Farm Weather")}</Link></li>
+            <li><Link to="/expert">{t("footer.expertLink", "👨‍🌾 Expert Agronomist")}</Link></li>
+            <li><Link to="/shop">{t("footer.shopLink", "🛒 Farm Care Store")}</Link></li>
           </ul>
         </div>
 
         {/* Col 3: Common Diagnoses */}
         <div className="footer-col">
-          <h4 className="footer-heading">Common Diagnoses</h4>
+          <h4 className="footer-heading">{t("footer.commonDiagnoses", "Common Diagnoses")}</h4>
           <ul className="footer-links-list">
             <li><Link to="/diseases">Early & Late Blight</Link></li>
             <li><Link to="/diseases">Rice Leaf Blast</Link></li>
@@ -52,27 +55,27 @@ function Footer() {
 
         {/* Col 4: Contact & Support */}
         <div className="footer-col">
-          <h4 className="footer-heading">Support & Outreach</h4>
+          <h4 className="footer-heading">{t("footer.supportOutreach", "Support & Outreach")}</h4>
           <div className="footer-contact-items">
             <div className="contact-item">
               <span className="contact-icon">📧</span>
               <div>
-                <span className="contact-sub">Email Support</span>
+                <span className="contact-sub">{t("footer.emailSupport", "Email Support")}</span>
                 <a href="mailto:cropdocto7800@gmail.com" className="contact-val">cropdocto7800@gmail.com</a>
               </div>
             </div>
             <div className="contact-item">
               <span className="contact-icon">📞</span>
               <div>
-                <span className="contact-sub">Farmer Helpline</span>
+                <span className="contact-sub">{t("footer.farmerHelpline", "Farmer Helpline")}</span>
                 <a href="tel:+917065942905" className="contact-val">+91 7065942905</a>
               </div>
             </div>
             <div className="contact-item">
               <span className="contact-icon">📍</span>
               <div>
-                <span className="contact-sub">Headquarters</span>
-                <span className="contact-val">Prayagraj, Uttar Pradesh, India</span>
+                <span className="contact-sub">{t("footer.headquarters", "Headquarters")}</span>
+                <span className="contact-val">{t("footer.locationVal", "Prayagraj, Uttar Pradesh, India")}</span>
               </div>
             </div>
           </div>
@@ -82,14 +85,14 @@ function Footer() {
       {/* Footer Bottom Bar */}
       <div className="footer-bottom-bar">
         <p className="copyright-text">
-          © {new Date().getFullYear()} Crop Doctor. Dedicated to smallholder farmer prosperity.
+          © {new Date().getFullYear()} {t("footer.copyright", "Crop Doctor. Dedicated to smallholder farmer prosperity.")}
         </p>
         <div className="footer-legal-links">
-          <span>Privacy Policy</span>
+          <span>{t("footer.privacy", "Privacy Policy")}</span>
           <span>•</span>
-          <span>Agronomic Disclaimer</span>
+          <span>{t("footer.disclaimer", "Agronomic Disclaimer")}</span>
           <span>•</span>
-          <span>Terms of Service</span>
+          <span>{t("footer.terms", "Terms of Service")}</span>
         </div>
       </div>
     </footer>
