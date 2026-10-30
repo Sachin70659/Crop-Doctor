@@ -19,6 +19,7 @@ export default function Admin() {
   const [userSearch, setUserSearch] = useState("");
   const [scanFilterCrop, setScanFilterCrop] = useState("all");
   const [consultationFilter, setConsultationFilter] = useState("all");
+  const [userRoleFilter, setUserRoleFilter] = useState("all"); // all | user | admin
 
   // Modals & Active Edit states
   const [selectedScanModal, setSelectedScanModal] = useState(null);
@@ -48,7 +49,7 @@ export default function Admin() {
 
   // ── Load All Data ─────────────────────────────────────────────
   const loadData = async (isRefresh = false) => {
-    if (!token) {
+    if (!token || (currentUser && currentUser.role !== "admin")) {
       setLoading(false);
       return;
     }
@@ -98,16 +99,50 @@ export default function Admin() {
     setTimeout(() => setSuccessMsg(""), 4000);
   };
 
-  // ── User Management Handlers ──────────────────────────────────
+  // ── User & Role Management Handlers ──────────────────────────
+  const handleToggleRole = async (userId, currentRole, userName) => {
+    const isSelf = currentUser && (currentUser._id === userId || currentUser.id === userId);
+    const newRole = currentRole === "admin" ? "user" : "admin";
+
+    if (isSelf && newRole !== "admin") {
+      alert("You cannot remove your own administrator status.");
+      return;
+    }
+
+    const actionText = newRole === "admin" ? "promote to Administrator" : "demote to Normal User";
+    if (!window.confirm(`Are you sure you want to ${actionText} "${userName}"?`)) {
+      return;
+    }
+
+    try {
+      await apiRequest(`/api/admin/users/${userId}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ role: newRole })
+      });
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
+      );
+      notify(`Role updated: "${userName}" is now ${newRole === "admin" ? "an Administrator" : "a Normal User"}.`);
+    } catch (err) {
+      setError("Could not update role: " + err.message);
+    }
+  };
+
   const handleDeleteUser = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete farmer "${name}"? All their scan records will also be erased.`)) {
+    const isSelf = currentUser && (currentUser._id === id || currentUser.id === id);
+    if (isSelf) {
+      alert("You cannot delete your own active administrator account.");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete user "${name}"? All their scan records will also be erased.`)) {
       return;
     }
 
     try {
       await apiRequest(`/api/admin/users/${id}`, { method: "DELETE" });
       setUsers((prev) => prev.filter((u) => u._id !== id));
-      notify(`Farmer "${name}" removed successfully.`);
+      notify(`User "${name}" removed successfully.`);
       loadData(true);
     } catch (err) {
       setError("Could not delete user: " + err.message);
@@ -227,10 +262,17 @@ export default function Admin() {
   // ── Filter Computations ───────────────────────────────────────
   const filteredUsers = users.filter((u) => {
     const q = userSearch.toLowerCase();
-    return (
+    const matchesSearch =
       (u.name && u.name.toLowerCase().includes(q)) ||
-      (u.email && u.email.toLowerCase().includes(q))
-    );
+      (u.email && u.email.toLowerCase().includes(q));
+
+    const role = u.role === "admin" ? "admin" : "user";
+    const matchesRole =
+      userRoleFilter === "all" ||
+      (userRoleFilter === "admin" && role === "admin") ||
+      (userRoleFilter === "user" && role === "user");
+
+    return matchesSearch && matchesRole;
   });
 
   const filteredScans = scans.filter((s) => {
@@ -246,7 +288,7 @@ export default function Admin() {
   // Unique crops in scans for filter dropdown
   const uniqueScanCrops = Array.from(new Set(scans.map((s) => s.crop).filter(Boolean)));
 
-  // If not logged in
+  // If not logged in or not admin
   if (!token) {
     return (
       <section className="admin-portal-page">
@@ -256,6 +298,21 @@ export default function Admin() {
           <p>Please log in with an administrator account to view farmer statistics and manage system data.</p>
           <Link to="/login" className="admin-login-btn">
             Go to Login
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  if (currentUser && currentUser.role !== "admin") {
+    return (
+      <section className="admin-portal-page">
+        <div className="admin-access-denied-card">
+          <div className="denied-icon">🛡️🚫</div>
+          <h2>Administrator Privileges Required</h2>
+          <p>Your current session is signed in with a Normal User (Farmer) account. Administrative controls and user management are restricted to platform administrators.</p>
+          <Link to="/dashboard" className="admin-login-btn" style={{ background: "#15803d" }}>
+            Return to Farmer Dashboard
           </Link>
         </div>
       </section>
@@ -575,8 +632,59 @@ export default function Admin() {
                   )}
                 </div>
 
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => setUserRoleFilter("all")}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      border: "1px solid #e2e8f0",
+                      cursor: "pointer",
+                      background: userRoleFilter === "all" ? "#15803d" : "#ffffff",
+                      color: userRoleFilter === "all" ? "#ffffff" : "#475569"
+                    }}
+                  >
+                    All Users ({users.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserRoleFilter("user")}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      border: "1px solid #e2e8f0",
+                      cursor: "pointer",
+                      background: userRoleFilter === "user" ? "#15803d" : "#ffffff",
+                      color: userRoleFilter === "user" ? "#ffffff" : "#475569"
+                    }}
+                  >
+                    Normal Users ({users.filter((u) => u.role !== "admin").length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserRoleFilter("admin")}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      border: "1px solid #e2e8f0",
+                      cursor: "pointer",
+                      background: userRoleFilter === "admin" ? "#d97706" : "#ffffff",
+                      color: userRoleFilter === "admin" ? "#ffffff" : "#475569"
+                    }}
+                  >
+                    Admins ({users.filter((u) => u.role === "admin").length})
+                  </button>
+                </div>
+
                 <div className="toolbar-stats">
-                  Showing <strong>{filteredUsers.length}</strong> of {users.length} registered farmers
+                  Showing <strong>{filteredUsers.length}</strong> of {users.length} users
                 </div>
               </div>
 
@@ -585,12 +693,13 @@ export default function Admin() {
                   <table className="admin-data-table">
                     <thead>
                       <tr>
-                        <th>Farmer Details</th>
+                        <th>User Details</th>
                         <th>Email Address</th>
-                        <th>Role</th>
+                        <th>Platform Role</th>
                         <th>Joined On</th>
                         <th>Scans Run</th>
                         <th>Queries</th>
+                        <th>Role Management</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -611,7 +720,7 @@ export default function Admin() {
                           <td>{u.email}</td>
                           <td>
                             <span className={`badge-role ${u.role === "admin" ? "admin" : "farmer"}`}>
-                              {u.role || "farmer"}
+                              {u.role === "admin" ? "🛡️ Admin" : "👤 Normal User"}
                             </span>
                           </td>
                           <td>{new Date(u.createdAt).toLocaleDateString()}</td>
@@ -622,11 +731,34 @@ export default function Admin() {
                             <span className="badge-count amber">{u.queriesCount || 0} queries</span>
                           </td>
                           <td>
+                            {currentUser && (currentUser._id === u._id || currentUser.id === u._id) ? (
+                              <span style={{ fontSize: "11.5px", color: "#64748b", fontWeight: "700" }}>
+                                Active Admin (You)
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                className="table-btn"
+                                style={{
+                                  background: u.role === "admin" ? "#f1f5f9" : "#fef3c7",
+                                  color: u.role === "admin" ? "#334155" : "#92400e",
+                                  border: `1px solid ${u.role === "admin" ? "#cbd5e1" : "#fde68a"}`
+                                }}
+                                onClick={() => handleToggleRole(u._id, u.role, u.name)}
+                                title={u.role === "admin" ? "Demote to Normal User" : "Promote to Administrator"}
+                              >
+                                {u.role === "admin" ? "Demote to User 👤" : "Make Admin 🛡️"}
+                              </button>
+                            )}
+                          </td>
+                          <td>
                             <button
                               type="button"
                               className="table-btn delete"
+                              disabled={currentUser && (currentUser._id === u._id || currentUser.id === u._id)}
                               onClick={() => handleDeleteUser(u._id, u.name)}
-                              title="Delete farmer and all related data"
+                              title={currentUser && (currentUser._id === u._id || currentUser.id === u._id) ? "You cannot delete your own account" : "Delete user and all related data"}
+                              style={currentUser && (currentUser._id === u._id || currentUser.id === u._id) ? { opacity: 0.4, cursor: "not-allowed" } : {}}
                             >
                               Delete
                             </button>
@@ -635,7 +767,7 @@ export default function Admin() {
                       ))}
                       {filteredUsers.length === 0 && (
                         <tr>
-                          <td colSpan="7" className="table-empty">
+                          <td colSpan="8" className="table-empty">
                             No farmers match &quot;{userSearch}&quot;.
                           </td>
                         </tr>

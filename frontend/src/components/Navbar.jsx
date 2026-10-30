@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const { user: authUser, logout } = useAuth();
   const { setLanguage, isHindi, t } = useLanguage();
+
   const [user, setUser] = useState(() => {
+    if (authUser) return authUser;
     try {
       return JSON.parse(localStorage.getItem("user")) || null;
     } catch {
@@ -15,6 +20,19 @@ function Navbar() {
   });
 
   const navigate = useNavigate();
+
+  // Keep user state in sync with context
+  useEffect(() => {
+    if (authUser) {
+      setUser(authUser);
+    } else {
+      try {
+        setUser(JSON.parse(localStorage.getItem("user")) || null);
+      } catch {
+        setUser(null);
+      }
+    }
+  }, [authUser]);
 
   // Scroll detection for enhanced glassmorphism
   useEffect(() => {
@@ -64,11 +82,15 @@ function Navbar() {
   const closeMenu = () => setMenuOpen(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
+    if (logout) {
+      logout();
+    } else {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setUser(null);
+      window.dispatchEvent(new Event("auth-changed"));
+    }
     closeMenu();
-    window.dispatchEvent(new Event("auth-changed"));
     navigate("/login");
   };
 
@@ -77,6 +99,8 @@ function Navbar() {
 
   const mobileClass = ({ isActive }) =>
     `mobile-nav-link ${isActive ? "active" : ""}`;
+
+  const hasAdminRole = user?.role === "admin" || authUser?.role === "admin";
 
   return (
     <>
@@ -125,12 +149,15 @@ function Navbar() {
                 {t("nav.dashboard", "Dashboard")}
               </NavLink>
             )}
-            <NavLink to="/admin" className={navClass}>
-              <span style={{ fontSize: "10px", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "6px", fontWeight: "800", marginRight: "4px" }}>
-                {t("nav.admin", "Admin")}
-              </span>
-              {t("nav.portal", "Portal")}
-            </NavLink>
+            {/* ONLY visible to authenticated Admins */}
+            {hasAdminRole && (
+              <NavLink to="/admin" className={navClass}>
+                <span style={{ fontSize: "10px", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "6px", fontWeight: "800", marginRight: "4px" }}>
+                  {t("nav.admin", "Admin")}
+                </span>
+                {t("nav.portal", "Portal")}
+              </NavLink>
+            )}
           </nav>
 
           {/* Action Cluster (Language Switcher + Auth + Mobile Toggle) */}
@@ -163,7 +190,14 @@ function Navbar() {
                     <span className="user-avatar-initials">
                       {(user.name || user.email || "U").charAt(0).toUpperCase()}
                     </span>
-                    <span className="user-display-name">{user.name?.split(" ")[0] || t("nav.farmer", "Farmer")}</span>
+                    <span className="user-display-name">
+                      {user.name?.split(" ")[0] || (hasAdminRole ? "Admin" : t("nav.farmer", "Farmer"))}
+                      {hasAdminRole && (
+                        <span style={{ marginLeft: "6px", fontSize: "10px", background: "#f59e0b", color: "#ffffff", padding: "2px 6px", borderRadius: "6px", fontWeight: "800", verticalAlign: "middle" }}>
+                          ADMIN
+                        </span>
+                      )}
+                    </span>
                   </Link>
                   <button
                     type="button"
@@ -290,11 +324,14 @@ function Navbar() {
               <span>{t("nav.dashboard", "Farmer Dashboard")}</span>
             </NavLink>
           )}
-          <NavLink to="/admin" className={mobileClass} onClick={closeMenu}>
-            <span className="mobile-icon">🛡️</span>
-            <span>{t("nav.admin", "Admin")} {t("nav.portal", "Portal")}</span>
-            <span className="mobile-badge-new" style={{ background: "#fef3c7", color: "#92400e" }}>Admin</span>
-          </NavLink>
+          {/* ONLY visible to authenticated Admins */}
+          {hasAdminRole && (
+            <NavLink to="/admin" className={mobileClass} onClick={closeMenu}>
+              <span className="mobile-icon">🛡️</span>
+              <span>{t("nav.admin", "Admin")} {t("nav.portal", "Portal")}</span>
+              <span className="mobile-badge-new" style={{ background: "#fef3c7", color: "#92400e" }}>Admin</span>
+            </NavLink>
+          )}
         </nav>
 
         <div className="mobile-drawer-footer">
@@ -305,7 +342,14 @@ function Navbar() {
                   {(user.name || user.email || "U").charAt(0).toUpperCase()}
                 </span>
                 <div>
-                  <p className="mobile-user-name">{user.name || t("nav.farmer", "Farmer")}</p>
+                  <p className="mobile-user-name">
+                    {user.name || (hasAdminRole ? "Admin" : t("nav.farmer", "Farmer"))}
+                    {hasAdminRole && (
+                      <span style={{ marginLeft: "8px", fontSize: "10px", background: "#f59e0b", color: "#ffffff", padding: "2px 6px", borderRadius: "6px", fontWeight: "800" }}>
+                        ADMIN
+                      </span>
+                    )}
+                  </p>
                   <p className="mobile-user-email">{user.email}</p>
                 </div>
               </div>

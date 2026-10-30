@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../api";
+import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 
 const CROP_OPTIONS = [
@@ -25,6 +26,7 @@ const CROP_OPTIONS = [
 
 function Scanner() {
   const { language, isHindi, t } = useLanguage();
+  const { user: authUser, token: contextToken } = useAuth();
 
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -45,7 +47,11 @@ function Scanner() {
   const streamRef = useRef(null);
   const nativeCameraInputRef = useRef(null);
 
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [token, setToken] = useState(() => contextToken || localStorage.getItem("token"));
+
+  useEffect(() => {
+    if (contextToken) setToken(contextToken);
+  }, [contextToken]);
 
   useEffect(() => {
     const handleAuth = () => {
@@ -222,7 +228,8 @@ function Scanner() {
   };
 
   const handleAnalyze = async () => {
-    if (!token) {
+    const activeToken = contextToken || token || localStorage.getItem("token");
+    if (!activeToken) {
       setError(
         isHindi
           ? "फसल रोग निदान और परिणाम सहेजने के लिए कृपया पहले लॉगिन करें।"
